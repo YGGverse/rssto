@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use std::{fs, path::PathBuf, str::FromStr};
 
 pub struct Target(Vec<PathBuf>);
