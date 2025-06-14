@@ -1,0 +1,17 @@
+[package]
+name = "rssto"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+readme = "README.md"
+description = "Aggregate RSS feeds into different formats"
+keywords = ["rss", "aggregator", "convertor", "conversion", "static"]
+categories = ["command-line-utilities", "parsing", "text-processing", "value-formatting"]
+repository = "https://github.com/YGGverse/rssto"
+
+[dependencies]
+anyhow = "1.0"
+chrono = "0.4"
+clap = { version = "4.5", features = ["derive"] }
+reqwest = { version = "0.12", features = ["blocking"] }
+rss = "2.0"
