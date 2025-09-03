@@ -1,101 +1,130 @@
 mod argument;
-mod debug;
-mod format;
-mod target;
-mod time;
+mod config;
 
-use anyhow::{Result, bail};
+use anyhow::Result;
 use argument::Argument;
-use debug::Debug;
-use format::Format;
-use format::Type;
-use target::Target;
-use time::Time;
+use chrono::{DateTime, Local};
+use clap::Parser;
+use config::{Config, Feed};
+use log::{debug, info};
+use std::{
+    env::var,
+    fs::{File, create_dir_all, read_to_string},
+    io::Write,
+    path::PathBuf,
+};
 
 fn main() -> Result<()> {
-    use clap::Parser;
-    use std::{thread::sleep, time::Duration};
-
-    let argument = Argument::parse();
-
-    // parse argument values once
-    let debug = Debug::init(&argument.debug)?;
-    let format = Format::init(&argument.format, &argument.template)?;
-    let target = Target::init(&argument.target)?;
-    let time = Time::init(argument.time_format);
-
-    // validate some targets
-    if argument.source.len() != argument.target.len() {
-        bail!("Targets quantity does not match sources!")
+    if var("RUST_LOG").is_ok() {
+        use tracing_subscriber::{EnvFilter, fmt::*};
+        struct T;
+        impl time::FormatTime for T {
+            fn format_time(&self, w: &mut format::Writer<'_>) -> std::fmt::Result {
+                write!(w, "{}", Local::now())
+            }
+        }
+        fmt()
+            .with_timer(T)
+            .with_env_filter(EnvFilter::from_default_env())
+            .init()
     }
 
-    debug.info("Crawler started");
+    let argument = Argument::parse();
+    let config: Config = toml::from_str(&read_to_string(argument.config)?)?;
+
+    info!("Crawler started");
 
     loop {
-        debug.info("Begin new crawl queue...");
-        for (i, s) in argument.source.iter().enumerate() {
-            debug.info(&format!("Update {s}..."));
-            crawl((s, i), &format, &target, &time, &argument.limit)?;
+        debug!("Begin new crawl queue...");
+
+        for feed in &config.feed {
+            debug!("Update `{}`...", feed.url);
+            crawl(feed)?
         }
-        debug.info(&format!(
-            "Crawl queue completed, wait {} seconds to continue...",
-            argument.update
-        ));
-        sleep(Duration::from_secs(argument.update));
+
+        debug!("Crawl queue completed");
+
+        if let Some(update) = config.update {
+            debug!("Wait {update} seconds to continue...",);
+            std::thread::sleep(std::time::Duration::from_secs(update))
+        } else {
+            return Ok(());
+        }
     }
 }
 
-fn crawl(
-    source: (&str, usize),
-    format: &Format,
-    target: &Target,
-    time: &Time,
-    limit: &Option<usize>,
-) -> Result<()> {
+fn crawl(feed: &Feed) -> Result<()> {
     use reqwest::blocking::get;
     use rss::Channel;
-    use std::{fs::File, io::Write};
 
-    let c = Channel::read_from(&get(source.0)?.bytes()?[..])?;
-    let i = c.items();
-    let l = limit.unwrap_or(i.len());
+    let channel = Channel::read_from(&get(feed.url.as_str())?.bytes()?[..])?;
+    let channel_items = channel.items();
+    let channel_items_limit = feed.list_items_limit.unwrap_or(channel_items.len());
 
-    for f in format.get() {
-        match f {
-            Type::Html(template) => File::create(target.index(source.1, "html"))?.write_all(
-                template
-                    .index
-                    .replace("{title}", c.title())
-                    .replace("{description}", c.description())
-                    .replace("{link}", c.link())
-                    .replace("{language}", c.language().unwrap_or_default())
-                    .replace("{pub_date}", &time.format(c.pub_date()))
-                    .replace("{last_build_date}", &time.format(c.last_build_date()))
-                    .replace("{time_generated}", &time.now())
-                    .replace("{items}", &{
-                        let mut items = String::with_capacity(l);
-                        for (n, item) in i.iter().enumerate() {
-                            if n > l {
-                                break;
-                            }
-                            items.push_str(
-                                &template
-                                    .index_item
-                                    .replace("{title}", item.title().unwrap_or_default())
-                                    .replace(
-                                        "{description}",
-                                        item.description().unwrap_or_default(),
-                                    )
-                                    .replace("{link}", item.link().unwrap_or_default())
-                                    .replace("{time}", &time.format(item.pub_date())),
-                            )
-                        }
-                        items
-                    })
-                    .as_bytes(),
-            )?,
-        }
+    for template in &feed.templates {
+        let root = PathBuf::from(template);
+        let extension = root.file_name().unwrap().to_string_lossy();
+
+        let index = {
+            let mut p = PathBuf::from(&root);
+            p.push(format!("index.{extension}"));
+            read_to_string(p)?
+        };
+
+        let index_item = {
+            let mut p = PathBuf::from(&root);
+            p.push("index");
+            p.push(format!("item.{extension}"));
+            read_to_string(p)?
+        };
+
+        create_dir_all(&feed.storage)?;
+        File::create({
+            let mut p = PathBuf::from(&feed.storage);
+            p.push(format!("index.{extension}"));
+            p
+        })?
+        .write_all(
+            index
+                .replace("{title}", channel.title())
+                .replace("{description}", channel.description())
+                .replace("{link}", channel.link())
+                .replace("{language}", channel.language().unwrap_or_default())
+                .replace(
+                    "{pub_date}",
+                    &time(channel.pub_date(), &feed.pub_date_format),
+                )
+                .replace(
+                    "{last_build_date}",
+                    &time(channel.last_build_date(), &feed.last_build_date_format),
+                )
+                .replace("{time_generated}", &time(None, &feed.time_generated_format))
+                .replace(
+                    "{items}",
+                    &channel_items
+                        .iter()
+                        .take(channel_items_limit)
+                        .map(|i| {
+                            index_item
+                                .replace("{title}", i.title().unwrap_or_default())
+                                .replace("{description}", i.description().unwrap_or_default())
+                                .replace("{link}", i.link().unwrap_or_default())
+                                .replace("{pub_date}", &time(i.pub_date(), &feed.pub_date_format))
+                        })
+                        .collect::<String>(),
+                )
+                .as_bytes(),
+        )?
     }
 
     Ok(())
+}
+
+fn time(value: Option<&str>, format: &str) -> String {
+    match value {
+        Some(v) => DateTime::parse_from_rfc2822(v).unwrap(),
+        None => Local::now().into(),
+    }
+    .format(format)
+    .to_string()
 }

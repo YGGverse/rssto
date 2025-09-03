@@ -1,0 +1,19 @@
+update = 60
+
+[[feed]]
+url = "https://assets.censor.net/rss/censor.net/rss_uk_news.xml"
+storage = "./public/censor.net/rss_uk_news"
+templates = ["./template/html","./template/gmi"]
+list_items_limit = 20
+pub_date_format = "%Y/%m/%d %H:%M:%S %z"
+last_build_date_format = "%Y/%m/%d %H:%M:%S %z"
+time_generated_format = "%Y/%m/%d %H:%M:%S %z"
+
+[[feed]]
+url = "https://assets.censor.net/rss/censor.net/rss_uk_resonance.xml"
+storage = "./public/censor.net/rss_uk_resonance"
+templates = ["./template/html","./template/gmi"]
+list_items_limit = 20
+pub_date_format = "%Y/%m/%d %H:%M:%S %z"
+last_build_date_format = "%Y/%m/%d %H:%M:%S %z"
+time_generated_format = "%Y/%m/%d %H:%M:%S %z"
