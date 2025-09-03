@@ -39,9 +39,7 @@ rssto -c config/example.toml
 ### Systemd
 
 1. Install `rssto` by copy the binary compiled into the native system apps destination:
-
-  * Linux: `sudo install /home/user/.cargo/bin/rssto /usr/local/bin/rssto`
-
+    * Linux: `sudo install /home/user/.cargo/bin/rssto /usr/local/bin/rssto`
 2. Create `systemd` configuration file at `/etc/systemd/system/rssto.service`:
 
 ``` rssto.service
