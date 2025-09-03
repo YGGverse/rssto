@@ -51,11 +51,10 @@ User=rssto
 Group=rssto
 
 # Uncomment for debug
-# Environment="RUST_LOG=debug"
+# Environment="RUST_LOG=DEBUG"
 # Environment="NO_COLOR=1"
 
-ExecStart=/usr/local/bin/rssto  --config /path/to/config1.toml\
-                                --config /path/to/config2.toml
+ExecStart=/usr/local/bin/rssto -c /path/to/config.toml
 
 StandardOutput=file:///home/rssto/debug.log
 StandardError=file:///home/rssto/error.log
