@@ -13,6 +13,7 @@ use std::{
     io::Write,
     path::PathBuf,
 };
+use strip_tags::*;
 
 fn main() -> Result<()> {
     if var("RUST_LOG").is_ok() {
@@ -86,8 +87,8 @@ fn crawl(feed: &Feed) -> Result<()> {
         })?
         .write_all(
             index
-                .replace("{title}", channel.title())
-                .replace("{description}", channel.description())
+                .replace("{title}", &strip_tags(channel.title()))
+                .replace("{description}", &strip_tags(channel.description()))
                 .replace("{link}", channel.link())
                 .replace("{language}", channel.language().unwrap_or_default())
                 .replace(
@@ -106,8 +107,11 @@ fn crawl(feed: &Feed) -> Result<()> {
                         .take(channel_items_limit)
                         .map(|i| {
                             index_item
-                                .replace("{title}", i.title().unwrap_or_default())
-                                .replace("{description}", i.description().unwrap_or_default())
+                                .replace("{title}", &strip_tags(i.title().unwrap_or_default()))
+                                .replace(
+                                    "{description}",
+                                    &strip_tags(i.description().unwrap_or_default()),
+                                )
                                 .replace("{link}", i.link().unwrap_or_default())
                                 .replace("{pub_date}", &time(i.pub_date(), &feed.pub_date_format))
                         })
