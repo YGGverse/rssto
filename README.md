@@ -6,12 +6,19 @@
 
 Convert RSS feeds into multiple formats
 
-## Roadmap
+## Features
 
-* [x] HTML
-* [x] [Gemtext](https://geminiprotocol.net/docs/gemtext.gmi)
-* [ ] JSON
-* [ ] Markdown
+* [x] Multiple feed sources with flexible TOML config options
+    * [x] Limit channel items
+    * [x] Format time
+    * [x] Multiple export format definition
+* [x] Custom templates
+* [x] Single export or daemon mode with update time
+* Export formats:
+    * [x] HTML
+    * [x] [Gemtext](https://geminiprotocol.net/docs/gemtext.gmi)
+    * [ ] JSON
+    * [ ] Markdown
 
 ## Install
 
