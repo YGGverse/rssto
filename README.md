@@ -36,9 +36,7 @@ rssto -c config/example.toml
 > * append `-u TIME` to run as the daemon with `TIME` interval update
 > * see `rssto --help` to print all available options
 
-### Autostart
-
-#### systemd
+### Systemd
 
 1. Install `rssto` by copy the binary compiled into the native system apps destination:
 
