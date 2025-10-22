@@ -61,6 +61,7 @@ fn crawl(feed: &Feed) -> Result<()> {
     let channel = Channel::read_from(&get(feed.url.as_str())?.bytes()?[..])?;
     let channel_items = channel.items();
     let channel_items_limit = feed.list_items_limit.unwrap_or(channel_items.len());
+    let regex = regex::Regex::new(r"\n{2,}").unwrap();
 
     for template in &feed.templates {
         let root = PathBuf::from(template);
@@ -106,14 +107,25 @@ fn crawl(feed: &Feed) -> Result<()> {
                         .iter()
                         .take(channel_items_limit)
                         .map(|i| {
-                            index_item
-                                .replace("{title}", &strip_tags(i.title().unwrap_or_default()))
-                                .replace(
-                                    "{description}",
-                                    &strip_tags(i.description().unwrap_or_default()),
+                            regex
+                                .replace_all(
+                                    &index_item
+                                        .replace(
+                                            "{title}",
+                                            &strip_tags(i.title().unwrap_or_default()),
+                                        )
+                                        .replace(
+                                            "{description}",
+                                            &strip_tags(i.description().unwrap_or_default()),
+                                        )
+                                        .replace("{link}", i.link().unwrap_or_default())
+                                        .replace(
+                                            "{pub_date}",
+                                            &time(i.pub_date(), &feed.pub_date_format),
+                                        ),
+                                    "\n",
                                 )
-                                .replace("{link}", i.link().unwrap_or_default())
-                                .replace("{pub_date}", &time(i.pub_date(), &feed.pub_date_format))
+                                .to_string()
                         })
                         .collect::<String>(),
                 )
