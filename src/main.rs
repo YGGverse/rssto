@@ -61,7 +61,7 @@ fn crawl(feed: &Feed) -> Result<()> {
     let channel = Channel::read_from(&get(feed.url.as_str())?.bytes()?[..])?;
     let channel_items = channel.items();
     let channel_items_limit = feed.list_items_limit.unwrap_or(channel_items.len());
-    let regex = regex::Regex::new(r"\n{2,}").unwrap();
+    let regex = regex::Regex::new(r"\n{3,}").unwrap();
 
     for template in &feed.templates {
         let root = PathBuf::from(template);
