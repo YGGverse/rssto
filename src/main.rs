@@ -123,7 +123,7 @@ fn crawl(feed: &Feed) -> Result<()> {
                                             "{pub_date}",
                                             &time(i.pub_date(), &feed.pub_date_format),
                                         ),
-                                    "\n",
+                                    "\n\n",
                                 )
                                 .to_string()
                         })
