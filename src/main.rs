@@ -6,7 +6,7 @@ use argument::Argument;
 use chrono::{DateTime, Local};
 use clap::Parser;
 use config::{Config, Feed};
-use log::{debug, info};
+use log::{debug, info, warn};
 use std::{
     env::var,
     fs::{File, create_dir_all, read_to_string},
@@ -40,7 +40,9 @@ fn main() -> Result<()> {
 
         for feed in &config.feed {
             debug!("Update `{}`...", feed.url);
-            crawl(feed)?
+            if let Err(e) = crawl(feed) {
+                warn!("Feed `{}` update failed: `{e}`", feed.url)
+            }
         }
 
         debug!("Crawl queue completed");
