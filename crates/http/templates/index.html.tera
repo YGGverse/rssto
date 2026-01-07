@@ -18,7 +18,7 @@
     {% if back %}<a href="{{ back }}">Back</a>{% endif %}
     {% if total %}
         <span>
-            Page {{ page }} / {{ pages }} ({{ total }} torrent{{ total | pluralize(plural="s") }} total)
+            Page {{ page }} / {{ pages }} ({{ total }} total)
         </span>
     {% endif %}
 {% endblock content %}

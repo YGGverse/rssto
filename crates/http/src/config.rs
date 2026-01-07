@@ -22,10 +22,6 @@ pub struct Config {
     #[arg(long, default_value_t = 20)]
     pub list_limit: usize,
 
-    /// Default capacity (estimated torrents in the `public` directory)
-    #[arg(long, default_value_t = 1000)]
-    pub capacity: usize,
-
     /// Bind server on given host
     #[arg(long, default_value_t = IpAddr::V4(Ipv4Addr::LOCALHOST))]
     pub host: IpAddr,
