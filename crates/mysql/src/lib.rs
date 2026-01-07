@@ -43,22 +43,32 @@ impl Mysql {
     }
 
     pub fn channel_item(&mut self, channel_item_id: u64) -> Result<Option<ChannelItem>, Error> {
-        self.connection.exec_first(
-            "SELECT `channel_item_id`, `channel_id`, `pub_date`, `guid`, `link`, `title`, `description` FROM `channel_item` WHERE `channel_item_id` = ?",
-            (channel_item_id,)
-        ).map(|row| {
-            row.map(|(channel_item_id, channel_id, pub_date, guid, link, title, description)| {
-                ChannelItem {
-                    channel_item_id,
-                    channel_id,
-                    pub_date,
-                    guid,
-                    link,
-                    title,
-                    description,
-                }
+        self.connection
+            .exec_first(
+                "SELECT `channel_item_id`,
+                        `channel_id`,
+                        `pub_date`,
+                        `guid`,
+                        `link`,
+                        `title`,
+                        `description` FROM `channel_item` WHERE `channel_item_id` = ?",
+                (channel_item_id,),
+            )
+            .map(|row| {
+                row.map(
+                    |(channel_item_id, channel_id, pub_date, guid, link, title, description)| {
+                        ChannelItem {
+                            channel_item_id,
+                            channel_id,
+                            pub_date,
+                            guid,
+                            link,
+                            title,
+                            description,
+                        }
+                    },
+                )
             })
-        })
     }
 
     pub fn channel_items_by_channel_id_guid(
@@ -69,29 +79,24 @@ impl Mysql {
     ) -> Result<Vec<ChannelItem>, Error> {
         self.connection.exec_map(
             format!(
-                "SELECT `channel_item_id`, `channel_id`, `pub_date`, `guid`, `link`, `title`, `description` FROM `channel_item` WHERE `channel_id` = ? AND `guid` = ? LIMIT {}",
-                limit.unwrap_or(DEFAULT_LIMIT)),
-            (
-                channel_id,
-                guid
+                "SELECT `channel_item_id`,
+                        `channel_id`,
+                        `pub_date`,
+                        `guid`,
+                        `link`,
+                        `title`,
+                        `description` FROM `channel_item` WHERE `channel_id` = ? AND `guid` = ? LIMIT {}",
+                limit.unwrap_or(DEFAULT_LIMIT)
             ),
-            |(
+            (channel_id, guid),
+            |(channel_item_id, channel_id, pub_date, guid, link, title, description)| ChannelItem {
                 channel_item_id,
                 channel_id,
                 pub_date,
                 guid,
                 link,
                 title,
-                description
-            )|
-            ChannelItem {
-                channel_item_id,
-                channel_id,
-                pub_date,
-                guid,
-                link,
-                title,
-                description
+                description,
             },
         )
     }
@@ -106,7 +111,12 @@ impl Mysql {
         description: Option<&str>,
     ) -> Result<u64, Error> {
         self.connection.exec_drop(
-            "INSERT INTO `channel_item` SET `channel_id` = ?, `pub_date` = ?, `guid` = ?, `link` = ?, `title` = ?, `description` = ?",
+            "INSERT INTO `channel_item` SET `channel_id` = ?,
+                                            `pub_date` = ?,
+                                            `guid` = ?,
+                                            `link` = ?,
+                                            `title` = ?,
+                                            `description` = ?",
             (channel_id, pub_date, guid, link, title, description),
         )?;
         Ok(self.connection.last_insert_id())
@@ -115,10 +125,20 @@ impl Mysql {
     pub fn contents(&mut self, limit: Option<usize>) -> Result<Vec<Content>, Error> {
         self.connection.query_map(
             format!(
-                "SELECT `content_id`, `channel_item_id`, `source_id`, `title`, `description` FROM `content` LIMIT {}",
+                "SELECT `content_id`,
+                        `channel_item_id`,
+                        `source_id`,
+                        `title`,
+                        `description` FROM `content` LIMIT {}",
                 limit.unwrap_or(DEFAULT_LIMIT)
             ),
-            |(content_id, channel_item_id,source_id, title, description)| Content { content_id, channel_item_id, source_id, title, description },
+            |(content_id, channel_item_id, source_id, title, description)| Content {
+                content_id,
+                channel_item_id,
+                source_id,
+                title,
+                description,
+            },
         )
     }
 
@@ -130,7 +150,11 @@ impl Mysql {
     ) -> Result<Vec<Content>, Error> {
         self.connection.exec_map(
             format!(
-                "SELECT `content_id`, `channel_item_id`, `source_id`, `title`, `description` FROM `content` WHERE `channel_item_id` = ? AND `source_id` = ? LIMIT {}",
+                "SELECT `content_id`,
+                        `channel_item_id`,
+                        `source_id`,
+                        `title`,
+                        `description` FROM `content` WHERE `channel_item_id` = ? AND `source_id` = ? LIMIT {}",
                 limit.unwrap_or(DEFAULT_LIMIT)
             ),
             (channel_item_id, source_id),
