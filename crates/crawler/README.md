@@ -37,7 +37,7 @@ User=rssto
 Group=rssto
 
 # Uncomment for debug
-# Environment="RUST_LOG=DEBUG"
+# Environment="RUST_LOG=rssto_crawler=debug"
 # Environment="NO_COLOR=1"
 
 ExecStart=/usr/local/bin/rssto-crawler -c /path/to/config.toml
