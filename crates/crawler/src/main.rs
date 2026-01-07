@@ -191,6 +191,7 @@ fn crawl(db: &mut Mysql, channel_config: &config::Channel) -> Result<()> {
                 .is_empty()
         );
         let _content_id = db.insert_content(channel_item_id, None, title, description)?;
+        // @TODO preload media
     }
     Ok(())
 }
