@@ -6,7 +6,8 @@ Web server implementation based on the Rocket engine
 > In development!
 
 ```
-cargo run -p rssto-http -- --mysql-username USER \
-                           --mysql-password PASS \
-                           --mysql-database NAME
+cd rssto/crates/rssto-http
+cargo run -- --mysql-username USER \
+             --mysql-password PASS \
+             --mysql-database NAME
 ```
