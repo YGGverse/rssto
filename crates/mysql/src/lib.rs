@@ -42,6 +42,25 @@ impl Mysql {
         Ok(self.connection.last_insert_id())
     }
 
+    pub fn channel_item(&mut self, channel_item_id: u64) -> Result<Option<ChannelItem>, Error> {
+        self.connection.exec_first(
+            "SELECT `channel_item_id`, `channel_id`, `pub_date`, `guid`, `link`, `title`, `description` FROM `channel_item` WHERE `channel_item_id` = ?",
+            (channel_item_id,)
+        ).map(|row| {
+            row.map(|(channel_item_id, channel_id, pub_date, guid, link, title, description)| {
+                ChannelItem {
+                    channel_item_id,
+                    channel_id,
+                    pub_date,
+                    guid,
+                    link,
+                    title,
+                    description,
+                }
+            })
+        })
+    }
+
     pub fn channel_items_by_channel_id_guid(
         &mut self,
         channel_id: u64,
