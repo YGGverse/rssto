@@ -118,6 +118,14 @@ impl Mysql {
         Ok(c.last_insert_id())
     }
 
+    pub fn contents_total(&self) -> Result<usize, Error> {
+        let total: Option<usize> = self
+            .pool
+            .get_conn()?
+            .query_first("SELECT COUNT(*) FROM `content`")?;
+        Ok(total.unwrap_or(0))
+    }
+
     pub fn contents(&self, limit: Option<usize>) -> Result<Vec<Content>, Error> {
         self.pool.get_conn()?.query_map(
             format!(
