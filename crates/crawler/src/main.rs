@@ -187,7 +187,7 @@ fn crawl(db: &Mysql, channel_config: &config::Channel) -> Result<()> {
             },
         };
         assert!(
-            db.contents_by_channel_item_id_source_id(channel_item_id, None, Some(1))?
+            db.contents_by_channel_item_id_provider_id(channel_item_id, None, Some(1))?
                 .is_empty()
         );
         let _content_id = db.insert_content(channel_item_id, None, title, description)?;

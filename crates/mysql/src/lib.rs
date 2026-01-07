@@ -99,7 +99,7 @@ impl Mysql {
         self.pool.get_conn()?.exec_first(
             "SELECT `content_id`,
                     `channel_item_id`,
-                    `source_id`,
+                    `provider_id`,
                     `title`,
                     `description` FROM `content` WHERE `content_id` = ?",
             (content_id,),
@@ -118,43 +118,43 @@ impl Mysql {
         self.pool.get_conn()?.query(format!(
             "SELECT `content_id`,
                     `channel_item_id`,
-                    `source_id`,
+                    `provider_id`,
                     `title`,
                     `description` FROM `content` ORDER BY `content_id` {sort} LIMIT {}",
             limit.unwrap_or(DEFAULT_LIMIT)
         ))
     }
 
-    pub fn contents_by_channel_item_id_source_id(
+    pub fn contents_by_channel_item_id_provider_id(
         &self,
         channel_item_id: u64,
-        source_id: Option<u64>,
+        provider_id: Option<u64>,
         limit: Option<usize>,
     ) -> Result<Vec<Content>, Error> {
         self.pool.get_conn()?.exec(
             format!(
                 "SELECT `content_id`,
                         `channel_item_id`,
-                        `source_id`,
+                        `provider_id`,
                         `title`,
-                        `description` FROM `content` WHERE `channel_item_id` = ? AND `source_id` = ? LIMIT {}",
+                        `description` FROM `content` WHERE `channel_item_id` = ? AND `provider_id` = ? LIMIT {}",
                 limit.unwrap_or(DEFAULT_LIMIT)
             ),
-            (channel_item_id, source_id),
+            (channel_item_id, provider_id),
         )
     }
 
     pub fn insert_content(
         &self,
         channel_item_id: u64,
-        source_id: Option<u64>,
+        provider_id: Option<u64>,
         title: String,
         description: String,
     ) -> Result<u64, Error> {
         let mut c = self.pool.get_conn()?;
         c.exec_drop(
-            "INSERT INTO `content` SET `channel_item_id` = ?, `source_id` = ?, `title` = ?, `description` = ?",
-            (channel_item_id, source_id, title, description ),
+            "INSERT INTO `content` SET `channel_item_id` = ?, `provider_id` = ?, `title` = ?, `description` = ?",
+            (channel_item_id, provider_id, title, description ),
         )?;
         Ok(c.last_insert_id())
     }
@@ -183,7 +183,7 @@ pub struct Content {
     pub channel_item_id: u64,
     /// None if the original `title` and `description` values
     /// parsed from the channel item on crawl
-    pub source_id: Option<u64>,
+    pub provider_id: Option<u64>,
     pub title: String,
     pub description: String,
 }
