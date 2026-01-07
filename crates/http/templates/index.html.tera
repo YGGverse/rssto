@@ -4,7 +4,7 @@
         {% for row in rows %}
             <div>
                 <a name="{{ row.content_id }}"></a>
-                <h2><a href="/{{ row.link }}">{{ row.title }}</a></h2>
+                <h2><a href="{{ row.content_id }}">{{ row.title }}</a></h2>
                 {% if row.time %}<p>{{ row.time }}</p>{% endif %}
                 <div>
                     {{ row.description }}
