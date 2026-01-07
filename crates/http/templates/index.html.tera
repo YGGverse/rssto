@@ -7,7 +7,7 @@
                 <h2><a href="{{ row.content_id }}">{{ row.title }}</a></h2>
                 {% if row.time %}<p>{{ row.time }}</p>{% endif %}
                 <div>
-                    {{ row.description }}
+                    {{ row.description | safe }}
                 </div>
             </div>
         {% endfor %}
