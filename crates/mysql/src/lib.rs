@@ -40,33 +40,16 @@ impl Mysql {
     }
 
     pub fn channel_item(&self, channel_item_id: u64) -> Result<Option<ChannelItem>, Error> {
-        self.pool
-            .get_conn()?
-            .exec_first(
-                "SELECT `channel_item_id`,
-                        `channel_id`,
-                        `pub_date`,
-                        `guid`,
-                        `link`,
-                        `title`,
-                        `description` FROM `channel_item` WHERE `channel_item_id` = ?",
-                (channel_item_id,),
-            )
-            .map(|row| {
-                row.map(
-                    |(channel_item_id, channel_id, pub_date, guid, link, title, description)| {
-                        ChannelItem {
-                            channel_item_id,
-                            channel_id,
-                            pub_date,
-                            guid,
-                            link,
-                            title,
-                            description,
-                        }
-                    },
-                )
-            })
+        self.pool.get_conn()?.exec_first(
+            "SELECT `channel_item_id`,
+                    `channel_id`,
+                    `pub_date`,
+                    `guid`,
+                    `link`,
+                    `title`,
+                    `description` FROM `channel_item` WHERE `channel_item_id` = ?",
+            (channel_item_id,),
+        )
     }
 
     pub fn channel_items_by_channel_id_guid(
@@ -75,7 +58,7 @@ impl Mysql {
         guid: &str,
         limit: Option<usize>,
     ) -> Result<Vec<ChannelItem>, Error> {
-        self.pool.get_conn()?.exec_map(
+        self.pool.get_conn()?.exec(
             format!(
                 "SELECT `channel_item_id`,
                         `channel_id`,
@@ -87,15 +70,6 @@ impl Mysql {
                 limit.unwrap_or(DEFAULT_LIMIT)
             ),
             (channel_id, guid),
-            |(channel_item_id, channel_id, pub_date, guid, link, title, description)| ChannelItem {
-                channel_item_id,
-                channel_id,
-                pub_date,
-                guid,
-                link,
-                title,
-                description,
-            },
         )
     }
 
@@ -141,23 +115,14 @@ impl Mysql {
     }
 
     pub fn contents(&self, limit: Option<usize>) -> Result<Vec<Content>, Error> {
-        self.pool.get_conn()?.query_map(
-            format!(
-                "SELECT `content_id`,
-                        `channel_item_id`,
-                        `source_id`,
-                        `title`,
-                        `description` FROM `content` LIMIT {}",
-                limit.unwrap_or(DEFAULT_LIMIT)
-            ),
-            |(content_id, channel_item_id, source_id, title, description)| Content {
-                content_id,
-                channel_item_id,
-                source_id,
-                title,
-                description,
-            },
-        )
+        self.pool.get_conn()?.query(format!(
+            "SELECT `content_id`,
+                    `channel_item_id`,
+                    `source_id`,
+                    `title`,
+                    `description` FROM `content` LIMIT {}",
+            limit.unwrap_or(DEFAULT_LIMIT)
+        ))
     }
 
     pub fn contents_by_channel_item_id_source_id(
@@ -166,7 +131,7 @@ impl Mysql {
         source_id: Option<u64>,
         limit: Option<usize>,
     ) -> Result<Vec<Content>, Error> {
-        self.pool.get_conn()?.exec_map(
+        self.pool.get_conn()?.exec(
             format!(
                 "SELECT `content_id`,
                         `channel_item_id`,
@@ -176,7 +141,6 @@ impl Mysql {
                 limit.unwrap_or(DEFAULT_LIMIT)
             ),
             (channel_item_id, source_id),
-            |(content_id, channel_item_id,source_id, title, description)| Content { content_id, channel_item_id, source_id, title, description },
         )
     }
 
@@ -196,13 +160,13 @@ impl Mysql {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, FromRow)]
 pub struct Channel {
     pub channel_id: u64,
     pub url: String,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, FromRow)]
 pub struct ChannelItem {
     pub channel_item_id: u64,
     pub channel_id: u64,
