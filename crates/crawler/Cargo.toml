@@ -1,0 +1,23 @@
+[package]
+name = "rssto-crawler"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+readme = "README.md"
+description = "Crawl RSS feeds into MySQL database"
+keywords = ["rss", "aggregator", "conversion", "mysql", "crawler"]
+categories = ["command-line-utilities", "parsing", "text-processing", "value-formatting"]
+repository = "https://github.com/YGGverse/rssto"
+
+[dependencies]
+anyhow = "1.0.100"
+chrono = "0.4.42"
+clap = { version = "4.5.54", features = ["derive"] }
+log = "0.4.29"
+mysql = { package = "rssto-mysql", version = "0.1.0", path = "../mysql" }
+reqwest = { version = "0.13.1", features = ["blocking"] }
+rss = "2.0.12"
+serde = { version = "1.0.228", features = ["derive"] }
+toml = "0.9.10"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+url = { version = "2.5.8", features = ["serde"] }

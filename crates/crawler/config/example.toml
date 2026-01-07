@@ -1,0 +1,20 @@
+update = 60
+
+[mysql]
+host = "localhost"
+port = 3307
+user = ""
+password = ""
+database = "rssto"
+
+[[channel]]
+url = "https://"
+items_limit = 20
+persist_item_title = true
+persist_item_description = true
+
+[[channel]]
+url = "https://"
+items_limit = 20
+persist_item_title = true
+persist_item_description = true

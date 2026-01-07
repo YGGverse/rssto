@@ -1,7 +1,0 @@
-# {title}
-
-{description}
-
-## {time_generated}
-
-{items}
