@@ -11,7 +11,7 @@ use config::Config;
 use feed::Feed;
 use global::Global;
 use meta::Meta;
-use mysql::Mysql;
+use mysql::{Mysql, Sort};
 use rocket::{State, http::Status, response::content::RawXml, serde::Serialize};
 use rocket_dyn_templates::{Template, context};
 
@@ -63,7 +63,7 @@ fn index(
             back: page.map(|p| uri!(index(search, if p > 2 { Some(p - 1) } else { None }))),
             next: if page.unwrap_or(1) * global.list_limit >= total { None }
                     else { Some(uri!(index(search, Some(page.map_or(2, |p| p + 1))))) },
-            rows: db.contents(Some(global.list_limit)).map_err(|e| {
+            rows: db.contents(Sort::Desc, Some(global.list_limit)).map_err(|e| {
                 error!("Could not get contents: `{e}`");
                 Status::InternalServerError
             })?
@@ -123,7 +123,7 @@ fn rss(meta: &State<Meta>, db: &State<Mysql>) -> Result<RawXml<String>, Status> 
         1024, // @TODO
     );
     for c in db
-        .contents(Some(20)) // @TODO
+        .contents(Sort::Desc, Some(20)) // @TODO
         .map_err(|e| {
             error!("Could not load channel item contents: `{e}`");
             Status::InternalServerError

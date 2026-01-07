@@ -114,13 +114,13 @@ impl Mysql {
         Ok(total.unwrap_or(0))
     }
 
-    pub fn contents(&self, limit: Option<usize>) -> Result<Vec<Content>, Error> {
+    pub fn contents(&self, sort: Sort, limit: Option<usize>) -> Result<Vec<Content>, Error> {
         self.pool.get_conn()?.query(format!(
             "SELECT `content_id`,
                     `channel_item_id`,
                     `source_id`,
                     `title`,
-                    `description` FROM `content` LIMIT {}",
+                    `description` FROM `content` ORDER BY `content_id` {sort} LIMIT {}",
             limit.unwrap_or(DEFAULT_LIMIT)
         ))
     }
@@ -186,6 +186,20 @@ pub struct Content {
     pub source_id: Option<u64>,
     pub title: String,
     pub description: String,
+}
+
+pub enum Sort {
+    Asc,
+    Desc,
+}
+
+impl std::fmt::Display for Sort {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Asc => write!(f, "ASC"),
+            Self::Desc => write!(f, "DESC"),
+        }
+    }
 }
 
 const DEFAULT_LIMIT: usize = 100;
