@@ -103,10 +103,11 @@ fn info(
             Ok(Template::render(
                 "info",
                 context! {
-                    meta: meta.inner(),
-                    title: format!("{}{S}{}", c.title, meta.title),
                     description: c.description,
                     link: i.link,
+                    meta: meta.inner(),
+                    title: format!("{}{S}{}", c.title, meta.title),
+                    name: c.title,
                     time: time(i.pub_date).format(&global.format_time).to_string(),
                 },
             ))
