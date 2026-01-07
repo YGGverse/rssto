@@ -90,14 +90,14 @@ fn crawl(db: &mut Mysql, channel_config: &config::Channel) -> Result<()> {
 
     for channel_item in channel_items.iter().take(channel_items_limit) {
         let guid = match channel_item.guid {
-            Some(ref guid) => guid.value.clone(),
+            Some(ref guid) => guid.value.as_ref(),
             None => {
                 warn!("Undefined `guid` field in `{channel_url}`");
                 continue;
             }
         };
-        let link = match channel_item.guid {
-            Some(ref link) => link.value.clone(),
+        let link = match channel_item.link {
+            Some(ref link) => link,
             None => {
                 warn!("Undefined `link` field in `{channel_url}`");
                 continue;
@@ -117,15 +117,15 @@ fn crawl(db: &mut Mysql, channel_config: &config::Channel) -> Result<()> {
             }
         };
         let channel_item_id = match db
-            .channel_items_by_channel_id_guid(channel_id, &guid, Some(1))?
+            .channel_items_by_channel_id_guid(channel_id, guid, Some(1))?
             .first()
         {
             Some(result) => result.channel_item_id,
             None => db.insert_channel_item(
                 channel_id,
                 pub_date,
-                &guid,
-                &link,
+                guid,
+                link,
                 if channel_config.persist_item_title {
                     channel_item.title()
                 } else {
@@ -142,7 +142,7 @@ fn crawl(db: &mut Mysql, channel_config: &config::Channel) -> Result<()> {
         // preload remote content
 
         let title = match channel_config.content_title_selector {
-            Some(ref selector) => match scrape(&link, selector) {
+            Some(ref selector) => match scrape(link, selector) {
                 Ok(value) => match value {
                     Some(title) => title,
                     None => {
@@ -166,7 +166,7 @@ fn crawl(db: &mut Mysql, channel_config: &config::Channel) -> Result<()> {
             },
         };
         let description = match channel_config.content_description_selector {
-            Some(ref selector) => match scrape(&link, selector) {
+            Some(ref selector) => match scrape(link, selector) {
                 Ok(value) => match value {
                     Some(description) => description,
                     None => {
