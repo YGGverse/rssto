@@ -139,37 +139,61 @@ fn crawl(db: &mut Mysql, channel_config: &config::Channel) -> Result<()> {
             )?,
         };
 
-        // @TODO preload remote content
+        // preload remote content
 
         let title = match channel_config.content_title_selector {
             Some(ref selector) => match scrape(&link, selector) {
-                Ok(value) => value,
+                Ok(value) => match value {
+                    Some(title) => title,
+                    None => {
+                        warn!("Could not scrape `title` selector in `{channel_url}`");
+                        continue;
+                    }
+                },
                 Err(e) => {
                     warn!("Could not update `title` selector in `{channel_url}`: `{e}`");
                     continue;
                 }
             },
-            None => None,
+            None => match channel_item.title {
+                Some(ref title) => title.clone(),
+                None => {
+                    warn!(
+                        "Could not assign `title` from channel item for content in `{channel_url}`"
+                    );
+                    continue;
+                }
+            },
         };
-
         let description = match channel_config.content_description_selector {
             Some(ref selector) => match scrape(&link, selector) {
-                Ok(value) => value,
+                Ok(value) => match value {
+                    Some(description) => description,
+                    None => {
+                        warn!("Could not scrape `description` selector in `{channel_url}`");
+                        continue;
+                    }
+                },
                 Err(e) => {
                     warn!("Could not update `description` selector in `{channel_url}`: `{e}`");
                     continue;
                 }
             },
-            None => None,
+            None => match channel_item.description {
+                Some(ref description) => description.clone(),
+                None => {
+                    warn!(
+                        "Could not assign `description` from channel item for content in `{channel_url}`"
+                    );
+                    continue;
+                }
+            },
         };
-
-        if title.is_none() && description.is_none() {
-            continue;
-        }
-
-        // @TODO insert content record
-
-        println!("{:?}", description)
+        assert!(
+            db.contents_by_channel_item_id_source_id(channel_item_id, None, Some(1))?
+                .is_empty()
+        );
+        let _content_id = db.insert_content(channel_item_id, None, title, description)?;
     }
     Ok(())
 }

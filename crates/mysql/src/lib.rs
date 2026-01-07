@@ -93,17 +93,34 @@ impl Mysql {
         Ok(self.connection.last_insert_id())
     }
 
+    pub fn contents_by_channel_item_id_source_id(
+        &mut self,
+        channel_item_id: u64,
+        source_id: Option<u64>,
+        limit: Option<usize>,
+    ) -> Result<Vec<Content>, Error> {
+        self.connection.exec_map(
+            format!(
+                "SELECT `content_id`, `channel_item_id`, `source_id`, `title`, `description` FROM `content` WHERE `channel_item_id` = ? AND `source_id` = ? LIMIT {}",
+                limit.unwrap_or(DEFAULT_LIMIT)
+            ),
+            (channel_item_id, source_id),
+            |(content_id, channel_item_id,source_id, title, description)| Content { content_id, channel_item_id, source_id, title, description },
+        )
+    }
+
     pub fn insert_content(
         &mut self,
         channel_item_id: u64,
         source_id: Option<u64>,
-        title: &str,
-        description: &str,
-    ) -> Result<(), Error> {
+        title: String,
+        description: String,
+    ) -> Result<u64, Error> {
         self.connection.exec_drop(
             "INSERT INTO `content` SET `channel_item_id` = ?, `source_id` = ?, `title` = ?, `description` = ?",
             (channel_item_id, source_id, title, description ),
-        )
+        )?;
+        Ok(self.connection.last_insert_id())
     }
 }
 
@@ -126,6 +143,7 @@ pub struct ChannelItem {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Content {
+    pub content_id: u64,
     pub channel_item_id: u64,
     /// None if the original `title` and `description` values
     /// parsed from the channel item on crawl
