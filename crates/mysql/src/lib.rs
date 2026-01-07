@@ -1,4 +1,7 @@
-use mysql::{Error, Pool, prelude::Queryable};
+use mysql::{
+    Error, Pool,
+    prelude::{FromRow, Queryable},
+};
 
 pub struct Mysql {
     pool: Pool,
@@ -118,6 +121,17 @@ impl Mysql {
         Ok(c.last_insert_id())
     }
 
+    pub fn content(&self, content_id: u64) -> Result<Option<Content>, Error> {
+        self.pool.get_conn()?.exec_first(
+            "SELECT `content_id`,
+                    `channel_item_id`,
+                    `source_id`,
+                    `title`,
+                    `description` FROM `content` WHERE `content_id` = ?",
+            (content_id,),
+        )
+    }
+
     pub fn contents_total(&self) -> Result<usize, Error> {
         let total: Option<usize> = self
             .pool
@@ -199,7 +213,7 @@ pub struct ChannelItem {
     pub description: Option<String>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, FromRow)]
 pub struct Content {
     pub content_id: u64,
     pub channel_item_id: u64,
