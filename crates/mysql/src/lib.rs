@@ -93,6 +93,16 @@ impl Mysql {
         Ok(self.connection.last_insert_id())
     }
 
+    pub fn contents(&mut self, limit: Option<usize>) -> Result<Vec<Content>, Error> {
+        self.connection.query_map(
+            format!(
+                "SELECT `content_id`, `channel_item_id`, `source_id`, `title`, `description` FROM `content` LIMIT {}",
+                limit.unwrap_or(DEFAULT_LIMIT)
+            ),
+            |(content_id, channel_item_id,source_id, title, description)| Content { content_id, channel_item_id, source_id, title, description },
+        )
+    }
+
     pub fn contents_by_channel_item_id_source_id(
         &mut self,
         channel_item_id: u64,
