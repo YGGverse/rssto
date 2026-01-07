@@ -9,7 +9,7 @@
     </head>
     <body>
         <header>
-            <a href="/">{{ meta.title }}</a>
+            <h1><a href="/">{{ meta.title }}</a></h1>
             <form action="/" method="GET">
                 <input type="text" name="search" value="{% if search %}{{ search }}{% endif %}" placeholder="Keyword..." />
                 <input type="submit" value="Search" />
