@@ -1,7 +1,7 @@
-use mysql::{Error, PooledConn, prelude::Queryable};
+use mysql::{Error, Pool, prelude::Queryable};
 
 pub struct Mysql {
-    connection: PooledConn,
+    pool: Pool,
 }
 
 impl Mysql {
@@ -13,19 +13,14 @@ impl Mysql {
         database: &str,
     ) -> Result<Self, Error> {
         Ok(Self {
-            connection: mysql::Pool::new(
+            pool: mysql::Pool::new(
                 format!("mysql://{user}:{password}@{host}:{port}/{database}").as_str(),
-            )?
-            .get_conn()?,
+            )?,
         })
     }
 
-    pub fn channels_by_url(
-        &mut self,
-        url: &str,
-        limit: Option<usize>,
-    ) -> Result<Vec<Channel>, Error> {
-        self.connection.exec_map(
+    pub fn channels_by_url(&self, url: &str, limit: Option<usize>) -> Result<Vec<Channel>, Error> {
+        self.pool.get_conn()?.exec_map(
             format!(
                 "SELECT `channel_id`, `url` FROM `channel` WHERE `url` = ? LIMIT {}",
                 limit.unwrap_or(DEFAULT_LIMIT)
@@ -35,15 +30,15 @@ impl Mysql {
         )
     }
 
-    pub fn insert_channel(&mut self, url: &str) -> Result<u64, Error> {
-        self.connection
-            .exec_drop("INSERT INTO `channel` SET `url` = ?", (url,))?;
-
-        Ok(self.connection.last_insert_id())
+    pub fn insert_channel(&self, url: &str) -> Result<u64, Error> {
+        let mut c = self.pool.get_conn()?;
+        c.exec_drop("INSERT INTO `channel` SET `url` = ?", (url,))?;
+        Ok(c.last_insert_id())
     }
 
-    pub fn channel_item(&mut self, channel_item_id: u64) -> Result<Option<ChannelItem>, Error> {
-        self.connection
+    pub fn channel_item(&self, channel_item_id: u64) -> Result<Option<ChannelItem>, Error> {
+        self.pool
+            .get_conn()?
             .exec_first(
                 "SELECT `channel_item_id`,
                         `channel_id`,
@@ -72,12 +67,12 @@ impl Mysql {
     }
 
     pub fn channel_items_by_channel_id_guid(
-        &mut self,
+        &self,
         channel_id: u64,
         guid: &str,
         limit: Option<usize>,
     ) -> Result<Vec<ChannelItem>, Error> {
-        self.connection.exec_map(
+        self.pool.get_conn()?.exec_map(
             format!(
                 "SELECT `channel_item_id`,
                         `channel_id`,
@@ -102,7 +97,7 @@ impl Mysql {
     }
 
     pub fn insert_channel_item(
-        &mut self,
+        &self,
         channel_id: u64,
         pub_date: i64,
         guid: &str,
@@ -110,7 +105,8 @@ impl Mysql {
         title: Option<&str>,
         description: Option<&str>,
     ) -> Result<u64, Error> {
-        self.connection.exec_drop(
+        let mut c = self.pool.get_conn()?;
+        c.exec_drop(
             "INSERT INTO `channel_item` SET `channel_id` = ?,
                                             `pub_date` = ?,
                                             `guid` = ?,
@@ -119,11 +115,11 @@ impl Mysql {
                                             `description` = ?",
             (channel_id, pub_date, guid, link, title, description),
         )?;
-        Ok(self.connection.last_insert_id())
+        Ok(c.last_insert_id())
     }
 
-    pub fn contents(&mut self, limit: Option<usize>) -> Result<Vec<Content>, Error> {
-        self.connection.query_map(
+    pub fn contents(&self, limit: Option<usize>) -> Result<Vec<Content>, Error> {
+        self.pool.get_conn()?.query_map(
             format!(
                 "SELECT `content_id`,
                         `channel_item_id`,
@@ -143,12 +139,12 @@ impl Mysql {
     }
 
     pub fn contents_by_channel_item_id_source_id(
-        &mut self,
+        &self,
         channel_item_id: u64,
         source_id: Option<u64>,
         limit: Option<usize>,
     ) -> Result<Vec<Content>, Error> {
-        self.connection.exec_map(
+        self.pool.get_conn()?.exec_map(
             format!(
                 "SELECT `content_id`,
                         `channel_item_id`,
@@ -163,17 +159,18 @@ impl Mysql {
     }
 
     pub fn insert_content(
-        &mut self,
+        &self,
         channel_item_id: u64,
         source_id: Option<u64>,
         title: String,
         description: String,
     ) -> Result<u64, Error> {
-        self.connection.exec_drop(
+        let mut c = self.pool.get_conn()?;
+        c.exec_drop(
             "INSERT INTO `content` SET `channel_item_id` = ?, `source_id` = ?, `title` = ?, `description` = ?",
             (channel_item_id, source_id, title, description ),
         )?;
-        Ok(self.connection.last_insert_id())
+        Ok(c.last_insert_id())
     }
 }
 
