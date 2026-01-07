@@ -11,6 +11,7 @@ Convert RSS feeds into multiple formats
 
 ## Components
 
-* `rssto-crawler` - RSS feed reader and data scrapper daemon
-* `rssto-http` - Web server implementation based on the Rocket engine
-* `rssto-mysql` - Shared database library
+* [x] `rssto-crawler` - RSS feed reader and data scrapper daemon
+* [x] `rssto-http` - Web server implementation based on the Rocket engine
+* [x] `rssto-mysql` - Shared database library
+* [ ] `rssto-llama` - Feeds auto-translation tool
