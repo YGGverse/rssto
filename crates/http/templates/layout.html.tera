@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>{{ title }}</title>
+        {% if meta.description %}
+            <meta name="description" content="{{ meta.description }}" />
+        {% endif %}
+    </head>
+    <body>
+        <header>
+            <a href="/">{{ meta.title }}</a>
+            <form action="/" method="GET">
+                <input type="text" name="search" value="{% if search %}{{ search }}{% endif %}" placeholder="Keyword..." />
+                <input type="submit" value="Search" />
+            </form>
+        </header>
+        <main>
+        {% block content %}{% endblock content %}
+        </main>
+    </body>
+</html>

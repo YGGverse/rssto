@@ -1,0 +1,12 @@
+{% extends "layout" %}
+{% block content %}
+<div>
+    <h1>{{ title }}</h1>
+    <div>
+        {{ description }}
+    </div>
+    <div>
+        <a href="{{ link }}">{{ time }}</a>
+    </div>
+</div>
+{% endblock content %}

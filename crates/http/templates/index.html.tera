@@ -1,0 +1,24 @@
+{% extends "layout" %}
+{% block content %}
+    {% if rows %}
+        {% for row in rows %}
+            <div>
+                <a name="{{ row.content_id }}"></a>
+                <h2><a href="/{{ row.link }}">{{ row.title }}</a></h2>
+                {% if row.time %}<p>{{ row.time }}</p>{% endif %}
+                <div>
+                    {{ row.description }}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div>Nothing.</div>
+    {% endif %}
+    {% if next %}<a href="{{ next }}">Next</a>{% endif %}
+    {% if back %}<a href="{{ back }}">Back</a>{% endif %}
+    {% if total %}
+        <span>
+            Page {{ page }} / {{ pages }} ({{ total }} torrent{{ total | pluralize(plural="s") }} total)
+        </span>
+    {% endif %}
+{% endblock content %}
