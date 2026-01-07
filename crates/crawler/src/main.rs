@@ -28,7 +28,7 @@ fn main() -> Result<()> {
 
     let argument = Argument::parse();
     let config: config::Config = toml::from_str(&read_to_string(argument.config)?)?;
-    let mut database = Mysql::connect(
+    let database = Mysql::connect(
         &config.mysql.host,
         config.mysql.port,
         &config.mysql.user,
@@ -41,7 +41,7 @@ fn main() -> Result<()> {
         debug!("Begin new crawl queue...");
         for c in &config.channel {
             debug!("Update `{}`...", c.url);
-            if let Err(e) = crawl(&mut database, c) {
+            if let Err(e) = crawl(&database, c) {
                 warn!("Channel `{}` update failed: `{e}`", c.url)
             }
         }
@@ -55,7 +55,7 @@ fn main() -> Result<()> {
     }
 }
 
-fn crawl(db: &mut Mysql, channel_config: &config::Channel) -> Result<()> {
+fn crawl(db: &Mysql, channel_config: &config::Channel) -> Result<()> {
     use rss::Channel;
     use scraper::Selector;
 
