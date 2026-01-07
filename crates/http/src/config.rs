@@ -43,8 +43,10 @@ pub struct Config {
     pub mysql_host: String,
     #[arg(long, default_value_t = 3306)]
     pub mysql_port: u16,
-
+    #[arg(long)]
     pub mysql_username: String,
+    #[arg(long)]
     pub mysql_password: String,
+    #[arg(long)]
     pub mysql_database: String,
 }
