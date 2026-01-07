@@ -1,3 +1,4 @@
+use scraper::Selector;
 use serde::Deserialize;
 use url::Url;
 
@@ -20,14 +21,19 @@ pub struct Channel {
     pub persist_item_title: bool,
     /// Save item description
     pub persist_item_description: bool,
+    /// Scrape title by CSS selector
+    /// * None to ignore
+    pub content_title_selector: Option<Selector>,
+    /// Scrape description by CSS selector
+    /// * None to ignore
+    pub content_description_selector: Option<Selector>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub mysql: Mysql,
     pub channel: Vec<Channel>,
-    /// Update timeout in seconds
-    ///
+    /// Channels update timeout in seconds
     /// * None to generate once
     pub update: Option<u64>,
 }

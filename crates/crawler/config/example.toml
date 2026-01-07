@@ -16,9 +16,15 @@ url = "https://"
 items_limit = 20
 persist_item_title = true
 persist_item_description = true
+# optional:
+# content_title_selector = "h1"
+# content_description_selector = "article"
 
 [[channel]]
 url = "https://"
 items_limit = 20
 persist_item_title = true
 persist_item_description = true
+# optional:
+# content_title_selector = "h1"
+# content_description_selector = "article"
