@@ -1,5 +1,8 @@
-update = 60
+# Rescan feed channels time, in seconds
+update = 900
 
+# Database connection setup
+# * see crates/mysql/database
 [mysql]
 host = "localhost"
 port = 3307
@@ -7,6 +10,7 @@ user = ""
 password = ""
 database = "rssto"
 
+# Content sources (unlimited)
 [[channel]]
 url = "https://"
 items_limit = 20
