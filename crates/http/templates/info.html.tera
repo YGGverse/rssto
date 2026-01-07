@@ -2,11 +2,9 @@
 {% block content %}
 <div>
     <h1>{{ title }}</h1>
+    <a href="{{ link }}">{{ time }}</a>
     <div>
         {{ description }}
-    </div>
-    <div>
-        <a href="{{ link }}">{{ time }}</a>
     </div>
 </div>
 {% endblock content %}
