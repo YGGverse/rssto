@@ -59,7 +59,7 @@ fn crawl(db: &mut Mysql, channel_config: &config::Channel) -> Result<()> {
     use rss::Channel;
     use scraper::Selector;
 
-    // shared local helpers
+    /// local helper
     fn scrape(url: &str, selector: &Selector) -> Result<Option<String>> {
         let document = scraper::Html::parse_document(&get(url)?.text()?);
         Ok(if let Some(first) = document.select(selector).next() {
@@ -70,8 +70,7 @@ fn crawl(db: &mut Mysql, channel_config: &config::Channel) -> Result<()> {
         })
     }
 
-    // allocate once
-    let channel_url = channel_config.url.to_string();
+    let channel_url = channel_config.url.to_string(); // allocate once
 
     let channel_items = match Channel::read_from(&get(channel_config.url.as_str())?.bytes()?[..]) {
         Ok(response) => response.into_items(),
@@ -116,31 +115,29 @@ fn crawl(db: &mut Mysql, channel_config: &config::Channel) -> Result<()> {
                 continue;
             }
         };
-        let channel_item_id = match db
+        if !db
             .channel_items_by_channel_id_guid(channel_id, guid, Some(1))?
-            .first()
+            .is_empty()
         {
-            Some(result) => result.channel_item_id,
-            None => db.insert_channel_item(
-                channel_id,
-                pub_date,
-                guid,
-                link,
-                if channel_config.persist_item_title {
-                    channel_item.title()
-                } else {
-                    None
-                },
-                if channel_config.persist_item_description {
-                    channel_item.description()
-                } else {
-                    None
-                },
-            )?,
-        };
-
-        // preload remote content
-
+            continue; // skip next steps as processed
+        }
+        let channel_item_id = db.insert_channel_item(
+            channel_id,
+            pub_date,
+            guid,
+            link,
+            if channel_config.persist_item_title {
+                channel_item.title()
+            } else {
+                None
+            },
+            if channel_config.persist_item_description {
+                channel_item.description()
+            } else {
+                None
+            },
+        )?;
+        // preload remote content..
         let title = match channel_config.content_title_selector {
             Some(ref selector) => match scrape(link, selector) {
                 Ok(value) => match value {
