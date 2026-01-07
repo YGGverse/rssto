@@ -158,7 +158,7 @@ fn rocket() -> _ {
         .manage(Mysql::connect(
             &config.mysql_host,
             config.mysql_port,
-            &config.mysql_user,
+            &config.mysql_username,
             &config.mysql_password,
             &config.mysql_database,
         ))
