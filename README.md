@@ -4,7 +4,7 @@
 [![Dependencies](https://deps.rs/repo/github/YGGverse/rssto/status.svg)](https://deps.rs/repo/github/YGGverse/rssto)
 [![crates.io](https://img.shields.io/crates/v/rssto.svg)](https://crates.io/crates/rssto)
 
-Convert RSS feeds into multiple formats
+Crawl content from RSS feeds into multiple formats
 
 > [!NOTE]
 > Branch in development!
