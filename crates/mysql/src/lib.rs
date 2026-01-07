@@ -50,7 +50,7 @@ impl Mysql {
     ) -> Result<Vec<ChannelItem>, Error> {
         self.connection.exec_map(
             format!(
-                "SELECT `channel_item_id`, `channel_id`, `guid`, `link`, `title`, `description` FROM `channel_item` WHERE `channel_id` = ? AND `guid` = ? LIMIT {}",
+                "SELECT `channel_item_id`, `channel_id`, `pub_date`, `guid`, `link`, `title`, `description` FROM `channel_item` WHERE `channel_id` = ? AND `guid` = ? LIMIT {}",
                 limit.unwrap_or(DEFAULT_LIMIT)),
             (
                 channel_id,
@@ -117,7 +117,7 @@ pub struct Channel {
 pub struct ChannelItem {
     pub channel_item_id: u64,
     pub channel_id: u64,
-    pub pub_date: i32,
+    pub pub_date: i64,
     pub guid: String,
     pub link: String,
     pub title: Option<String>,
