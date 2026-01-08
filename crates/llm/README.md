@@ -10,7 +10,7 @@ LLM daemon for the rssto DB translations
 2. Run LLM server:
 
 ```
-llama-server -hf ggml-org/gemma-3-1b-it-GGUF`
+llama-server -hf ggml-org/gemma-3-1b-it-GGUF
 ```
 
 3. Launch `rssto-llm` to handle `content` DB:
