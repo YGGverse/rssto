@@ -32,7 +32,7 @@ pub struct Config {
     pub host: IpAddr,
 
     /// Bind server on given port
-    #[arg(long, short, default_value_t = 8000)]
+    #[arg(long, default_value_t = 8000)]
     pub port: u16,
 
     /// Configure instance in the debug mode
