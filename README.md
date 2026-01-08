@@ -11,7 +11,7 @@ Crawl content from RSS feeds into multiple formats
 
 ## Components
 
-* [x] `rssto-crawler` - RSS feed reader and data scrapper daemon
-* [x] `rssto-http` - Web server implementation based on the Rocket engine
-* [x] `rssto-mysql` - Shared database library
-* [ ] `rssto-llama` - Feeds auto-translation tool
+* `rssto-crawler` - RSS feed reader and data scrapper daemon
+* `rssto-http` - Web server implementation based on the Rocket engine
+* `rssto-llm` - Feeds auto-translation
+* `rssto-mysql` - Shared database library

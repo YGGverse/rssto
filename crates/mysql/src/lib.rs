@@ -108,7 +108,7 @@ impl Mysql {
 
     pub fn contents_total_by_provider_id(&self, provider_id: Option<u64>) -> Result<usize, Error> {
         let total: Option<usize> = self.pool.get_conn()?.exec_first(
-            "SELECT COUNT(*) FROM `content` WHERE `provider_id` = ?",
+            "SELECT COUNT(*) FROM `content` WHERE `provider_id` <=> ?",
             (provider_id,),
         )?;
         Ok(total.unwrap_or(0))
@@ -125,10 +125,33 @@ impl Mysql {
                     `channel_item_id`,
                     `provider_id`,
                     `title`,
-                    `description` FROM `content` WHERE `provider_id` = ? ORDER BY `content_id` {sort} LIMIT {}",
+                    `description` FROM `content` WHERE `provider_id` <=> ? ORDER BY `content_id` {sort} LIMIT {}",
             limit.unwrap_or(DEFAULT_LIMIT)
         ),
         (provider_id, ))
+    }
+
+    /// Get subjects for `rssto-llm` queue
+    pub fn contents_queue_for_provider_id(
+        &self,
+        provider_id: u64,
+        sort: Sort,
+        limit: Option<usize>,
+    ) -> Result<Vec<Content>, Error> {
+        self.pool.get_conn()?.exec(
+            format!(
+                "SELECT `c1`.`content_id`,
+                        `c1`.`channel_item_id`,
+                        `c1`.`provider_id`,
+                        `c1`.`title`,
+                        `c1`.`description`
+                    FROM `content` AS `c1` WHERE `c1`.`provider_id` IS NULL AND NOT EXISTS (
+                        SELECT NULL FROM `content` AS `c2` WHERE `c2`.`channel_item_id` = `c1`.`channel_item_id` AND `c2`.`provider_id` = ? LIMIT 1
+                    ) ORDER BY `c1`.`content_id` {sort} LIMIT {}",
+                limit.unwrap_or(DEFAULT_LIMIT)
+            ),
+            (provider_id,),
+        )
     }
 
     pub fn contents_by_channel_item_id_provider_id(
@@ -143,7 +166,7 @@ impl Mysql {
                         `channel_item_id`,
                         `provider_id`,
                         `title`,
-                        `description` FROM `content` WHERE `channel_item_id` = ? AND `provider_id` = ? LIMIT {}",
+                        `description` FROM `content` WHERE `channel_item_id` = ? AND `provider_id` <=> ? LIMIT {}",
                 limit.unwrap_or(DEFAULT_LIMIT)
             ),
             (channel_item_id, provider_id),
@@ -154,14 +177,29 @@ impl Mysql {
         &self,
         channel_item_id: u64,
         provider_id: Option<u64>,
-        title: String,
-        description: String,
+        title: &str,
+        description: &str,
     ) -> Result<u64, Error> {
         let mut c = self.pool.get_conn()?;
         c.exec_drop(
             "INSERT INTO `content` SET `channel_item_id` = ?, `provider_id` = ?, `title` = ?, `description` = ?",
             (channel_item_id, provider_id, title, description ),
         )?;
+        Ok(c.last_insert_id())
+    }
+
+    pub fn provider_by_name(&self, name: &str) -> Result<Option<Provider>, Error> {
+        self.pool.get_conn()?.exec_first(
+            "SELECT `provider_id`,
+                    `name`
+                    FROM `provider` WHERE `name` = ?",
+            (name,),
+        )
+    }
+
+    pub fn insert_provider(&self, name: &str) -> Result<u64, Error> {
+        let mut c = self.pool.get_conn()?;
+        c.exec_drop("INSERT INTO `provider` SET `name` = ?", (name,))?;
         Ok(c.last_insert_id())
     }
 }
@@ -192,6 +230,12 @@ pub struct Content {
     pub provider_id: Option<u64>,
     pub title: String,
     pub description: String,
+}
+
+#[derive(Debug, PartialEq, Eq, FromRow)]
+pub struct Provider {
+    pub provider_id: u64,
+    pub name: String,
 }
 
 pub enum Sort {

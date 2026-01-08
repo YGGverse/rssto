@@ -1,0 +1,20 @@
+[package]
+name = "rssto-llm"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+readme = "README.md"
+description = "LLM daemon for the rssto DB translations"
+keywords = ["rss", "llm", "translation", "localization", "server"]
+categories = ["command-line-utilities", "parsing", "text-processing", "value-formatting"]
+repository = "https://github.com/YGGverse/rssto"
+
+[dependencies]
+anyhow = "1.0.100"
+chrono = "0.4.42"
+clap = { version = "4.5.54", features = ["derive"] }
+lancor = "0.1.1"
+log = "0.4.29"
+mysql = { package = "rssto-mysql", version = "0.1.0", path = "../mysql" }
+tokio = { version = "1.0", features = ["full"] }
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }

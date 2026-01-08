@@ -3,5 +3,6 @@ resolver = "2"
 members = [
     "crates/crawler",
     "crates/http",
+    "crates/llm",
     "crates/mysql",
 ]
