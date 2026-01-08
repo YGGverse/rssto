@@ -72,8 +72,6 @@ async fn main() -> Result<()> {
                 ))
                 .await?;
 
-            println!("{}", &title.choices[0].message.content);
-
             let description =
                 llm.chat_completion(ChatCompletionRequest::new(&arg.llm_model).message(
                     Message::user(format!("{}\n{}", arg.llm_message, source.description)),
