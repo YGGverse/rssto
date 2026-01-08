@@ -106,23 +106,29 @@ impl Mysql {
         )
     }
 
-    pub fn contents_total(&self) -> Result<usize, Error> {
-        let total: Option<usize> = self
-            .pool
-            .get_conn()?
-            .query_first("SELECT COUNT(*) FROM `content`")?;
+    pub fn contents_total_by_provider_id(&self, provider_id: Option<u64>) -> Result<usize, Error> {
+        let total: Option<usize> = self.pool.get_conn()?.exec_first(
+            "SELECT COUNT(*) FROM `content` WHERE `provider_id` = ?",
+            (provider_id,),
+        )?;
         Ok(total.unwrap_or(0))
     }
 
-    pub fn contents(&self, sort: Sort, limit: Option<usize>) -> Result<Vec<Content>, Error> {
-        self.pool.get_conn()?.query(format!(
+    pub fn contents_by_provider_id(
+        &self,
+        provider_id: Option<u64>,
+        sort: Sort,
+        limit: Option<usize>,
+    ) -> Result<Vec<Content>, Error> {
+        self.pool.get_conn()?.exec(format!(
             "SELECT `content_id`,
                     `channel_item_id`,
                     `provider_id`,
                     `title`,
-                    `description` FROM `content` ORDER BY `content_id` {sort} LIMIT {}",
+                    `description` FROM `content` WHERE `provider_id` = ? ORDER BY `content_id` {sort} LIMIT {}",
             limit.unwrap_or(DEFAULT_LIMIT)
-        ))
+        ),
+        (provider_id, ))
     }
 
     pub fn contents_by_channel_item_id_provider_id(

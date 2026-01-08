@@ -18,6 +18,11 @@ pub struct Config {
     #[arg(long, default_value_t = String::from("%d/%m/%Y %H:%M"))]
     pub format_time: String,
 
+    /// Provider ID (`provider` table)
+    /// * None for the original content
+    #[arg(long, short)]
+    pub provider_id: Option<u64>,
+
     /// Default listing limit
     #[arg(long, default_value_t = 20)]
     pub list_limit: usize,

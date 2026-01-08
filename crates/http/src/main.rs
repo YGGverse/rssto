@@ -32,10 +32,12 @@ fn index(
         time: String,
         title: String,
     }
-    let total = db.contents_total().map_err(|e| {
-        error!("Could not get contents total: `{e}`");
-        Status::InternalServerError
-    })?;
+    let total = db
+        .contents_total_by_provider_id(global.provider_id)
+        .map_err(|e| {
+            error!("Could not get contents total: `{e}`");
+            Status::InternalServerError
+        })?;
     Ok(Template::render(
         "index",
         context! {
@@ -63,7 +65,7 @@ fn index(
             back: page.map(|p| uri!(index(search, if p > 2 { Some(p - 1) } else { None }))),
             next: if page.unwrap_or(1) * global.list_limit >= total { None }
                     else { Some(uri!(index(search, Some(page.map_or(2, |p| p + 1))))) },
-            rows: db.contents(Sort::Desc, Some(global.list_limit)).map_err(|e| {
+            rows: db.contents_by_provider_id(global.provider_id, Sort::Desc, Some(global.list_limit)).map_err(|e| {
                 error!("Could not get contents: `{e}`");
                 Status::InternalServerError
             })?
@@ -117,14 +119,18 @@ fn info(
 }
 
 #[get("/rss")]
-fn rss(meta: &State<Meta>, db: &State<Mysql>) -> Result<RawXml<String>, Status> {
+fn rss(
+    global: &State<Global>,
+    meta: &State<Meta>,
+    db: &State<Mysql>,
+) -> Result<RawXml<String>, Status> {
     let mut f = Feed::new(
         &meta.title,
         meta.description.as_deref(),
         1024, // @TODO
     );
     for c in db
-        .contents(Sort::Desc, Some(20)) // @TODO
+        .contents_by_provider_id(global.provider_id, Sort::Desc, Some(20)) // @TODO
         .map_err(|e| {
             error!("Could not load channel item contents: `{e}`");
             Status::InternalServerError
@@ -170,6 +176,7 @@ fn rocket() -> _ {
         .manage(Global {
             format_time: config.format_time,
             list_limit: config.list_limit,
+            provider_id: config.provider_id,
         })
         .manage(Meta {
             description: config.description,
