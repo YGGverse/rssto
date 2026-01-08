@@ -6,6 +6,9 @@
         {% if meta.description %}
             <meta name="description" content="{{ meta.description }}" />
         {% endif %}
+        <style>
+            * {color-scheme: light dark}
+        </style>
     </head>
     <body>
         <header>
