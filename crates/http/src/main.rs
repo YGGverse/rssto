@@ -33,7 +33,7 @@ fn index(
         title: String,
     }
     let total = db
-        .contents_total_by_provider_id(global.provider_id)
+        .contents_total_by_provider_id(global.provider_id, search)
         .map_err(|e| {
             error!("Could not get contents total: `{e}`");
             Status::InternalServerError
@@ -65,7 +65,7 @@ fn index(
             back: page.map(|p| uri!(index(search, if p > 2 { Some(p - 1) } else { None }))),
             next: if page.unwrap_or(1) * global.list_limit >= total { None }
                     else { Some(uri!(index(search, Some(page.map_or(2, |p| p + 1))))) },
-            rows: db.contents_by_provider_id(global.provider_id, Sort::Desc, Some(global.list_limit)).map_err(|e| {
+            rows: db.contents_by_provider_id(global.provider_id, search, Sort::Desc, Some(global.list_limit)).map_err(|e| {
                 error!("Could not get contents: `{e}`");
                 Status::InternalServerError
             })?
@@ -118,8 +118,9 @@ fn info(
     }
 }
 
-#[get("/rss")]
+#[get("/rss?<search>")]
 fn rss(
+    search: Option<&str>,
     global: &State<Global>,
     meta: &State<Meta>,
     db: &State<Mysql>,
@@ -130,7 +131,7 @@ fn rss(
         1024, // @TODO
     );
     for c in db
-        .contents_by_provider_id(global.provider_id, Sort::Desc, Some(20)) // @TODO
+        .contents_by_provider_id(global.provider_id, search, Sort::Desc, Some(20)) // @TODO
         .map_err(|e| {
             error!("Could not load channel item contents: `{e}`");
             Status::InternalServerError

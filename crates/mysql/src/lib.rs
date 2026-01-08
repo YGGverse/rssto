@@ -106,10 +106,14 @@ impl Mysql {
         )
     }
 
-    pub fn contents_total_by_provider_id(&self, provider_id: Option<u64>) -> Result<usize, Error> {
+    pub fn contents_total_by_provider_id(
+        &self,
+        provider_id: Option<u64>,
+        keyword: Option<&str>,
+    ) -> Result<usize, Error> {
         let total: Option<usize> = self.pool.get_conn()?.exec_first(
-            "SELECT COUNT(*) FROM `content` WHERE `provider_id` <=> ?",
-            (provider_id,),
+            "SELECT COUNT(*) FROM `content` WHERE `provider_id` <=> ? AND `title` LIKE ?",
+            (provider_id, like(keyword)),
         )?;
         Ok(total.unwrap_or(0))
     }
@@ -117,6 +121,7 @@ impl Mysql {
     pub fn contents_by_provider_id(
         &self,
         provider_id: Option<u64>,
+        keyword: Option<&str>,
         sort: Sort,
         limit: Option<usize>,
     ) -> Result<Vec<Content>, Error> {
@@ -125,10 +130,10 @@ impl Mysql {
                     `channel_item_id`,
                     `provider_id`,
                     `title`,
-                    `description` FROM `content` WHERE `provider_id` <=> ? ORDER BY `content_id` {sort} LIMIT {}",
+                    `description` FROM `content` WHERE `provider_id` <=> ? AND `title` LIKE ? ORDER BY `content_id` {sort} LIMIT {}",
             limit.unwrap_or(DEFAULT_LIMIT)
         ),
-        (provider_id, ))
+        (provider_id, like(keyword), ))
     }
 
     /// Get subjects for `rssto-llm` queue
@@ -250,6 +255,11 @@ impl std::fmt::Display for Sort {
             Self::Desc => write!(f, "DESC"),
         }
     }
+}
+
+/// Shared search logic
+fn like(value: Option<&str>) -> String {
+    value.map_or("%".into(), |k| format!("{k}%"))
 }
 
 const DEFAULT_LIMIT: usize = 100;
