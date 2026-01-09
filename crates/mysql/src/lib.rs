@@ -23,13 +23,12 @@ impl Mysql {
     }
 
     pub fn channels_by_url(&self, url: &str, limit: Option<usize>) -> Result<Vec<Channel>, Error> {
-        self.pool.get_conn()?.exec_map(
+        self.pool.get_conn()?.exec(
             format!(
                 "SELECT `channel_id`, `url` FROM `channel` WHERE `url` = ? LIMIT {}",
                 limit.unwrap_or(DEFAULT_LIMIT)
             ),
             (url,),
-            |(channel_id, url)| Channel { channel_id, url },
         )
     }
 
@@ -171,7 +170,8 @@ impl Mysql {
                         `channel_item_id`,
                         `provider_id`,
                         `title`,
-                        `description` FROM `content` WHERE `channel_item_id` = ? AND `provider_id` <=> ? LIMIT {}",
+                        `description` FROM  `content`
+                                      WHERE `channel_item_id` = ? AND `provider_id` <=> ? LIMIT {}",
                 limit.unwrap_or(DEFAULT_LIMIT)
             ),
             (channel_item_id, provider_id),
@@ -187,8 +187,58 @@ impl Mysql {
     ) -> Result<u64, Error> {
         let mut c = self.pool.get_conn()?;
         c.exec_drop(
-            "INSERT INTO `content` SET `channel_item_id` = ?, `provider_id` = ?, `title` = ?, `description` = ?",
-            (channel_item_id, provider_id, title, description ),
+            "INSERT INTO `content` SET  `channel_item_id` = ?,
+                                        `provider_id` = ?,
+                                        `title` = ?,
+                                        `description` = ?",
+            (channel_item_id, provider_id, title, description),
+        )?;
+        Ok(c.last_insert_id())
+    }
+
+    pub fn content_image(&self, content_image_id: u64) -> Result<Option<ContentImage>, Error> {
+        self.pool.get_conn()?.exec_first(
+            "SELECT `content_image_id`,
+                    `content_id`,
+                    `image_id`,
+                    `data`,
+                    `source` FROM `content_image`
+                             JOIN  `image` ON (`image`.`image_id` = `content_image`.`image_id`)
+                             WHERE `content_image_id` = ? LIMIT 1",
+            (content_image_id,),
+        )
+    }
+
+    pub fn insert_content_image(&self, content_id: u64, image_id: u64) -> Result<u64, Error> {
+        let mut c = self.pool.get_conn()?;
+        c.exec_drop(
+            "INSERT INTO `content_image` SET `content_id` = ?, `image_id` = ?",
+            (content_id, image_id),
+        )?;
+        Ok(c.last_insert_id())
+    }
+
+    pub fn image_by_source(&self, source: &str) -> Result<Option<Image>, Error> {
+        self.pool.get_conn()?.exec_first(
+            "SELECT `image_id`,
+                    `source`,
+                    `data` FROM `image` WHERE `source` = ? LIMIT 1",
+            (source,),
+        )
+    }
+
+    pub fn images(&self, limit: Option<usize>) -> Result<Vec<Image>, Error> {
+        self.pool.get_conn()?.query(format!(
+            "SELECT `image_id`, `source`, `data` FROM `image` LIMIT {}",
+            limit.unwrap_or(DEFAULT_LIMIT)
+        ))
+    }
+
+    pub fn insert_image(&self, source: &str, data: &[u8]) -> Result<u64, Error> {
+        let mut c = self.pool.get_conn()?;
+        c.exec_drop(
+            "INSERT INTO `image` SET `source` = ?, `data` = ?",
+            (source, data),
         )?;
         Ok(c.last_insert_id())
     }
@@ -241,6 +291,24 @@ pub struct Content {
 pub struct Provider {
     pub provider_id: u64,
     pub name: String,
+}
+
+#[derive(Debug, PartialEq, Eq, FromRow)]
+pub struct Image {
+    pub image_id: u64,
+    pub source: String,
+    pub data: Vec<u8>,
+}
+
+/// Includes joined `image` table members
+#[derive(Debug, PartialEq, Eq, FromRow)]
+pub struct ContentImage {
+    pub content_image_id: u64,
+    pub content_id: u64,
+    pub image_id: u64,
+    // Image members (JOIN)
+    pub data: Vec<u8>,
+    pub source: String,
 }
 
 pub enum Sort {
