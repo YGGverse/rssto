@@ -11,7 +11,7 @@ use config::Config;
 use feed::Feed;
 use global::Global;
 use meta::Meta;
-use mysql::{Pollable, pollable::Sort};
+use mysql::{Database, table::Sort};
 use rocket::{State, http::Status, response::content::RawXml, serde::Serialize};
 use rocket_dyn_templates::{Template, context};
 
@@ -19,7 +19,7 @@ use rocket_dyn_templates::{Template, context};
 fn index(
     search: Option<&str>,
     page: Option<usize>,
-    db: &State<Pollable>,
+    db: &State<Database>,
     meta: &State<Meta>,
     global: &State<Global>,
 ) -> Result<Template, Status> {
@@ -32,7 +32,11 @@ fn index(
         time: String,
         title: String,
     }
-    let total = db
+    let mut conn = db.connection().map_err(|e| {
+        error!("Could not connect database: `{e}`");
+        Status::InternalServerError
+    })?;
+    let total = conn
         .contents_total_by_provider_id(global.provider_id, search)
         .map_err(|e| {
             error!("Could not get contents total: `{e}`");
@@ -65,19 +69,24 @@ fn index(
             back: page.map(|p| uri!(index(search, if p > 2 { Some(p - 1) } else { None }))),
             next: if page.unwrap_or(1) * global.list_limit >= total { None }
                     else { Some(uri!(index(search, Some(page.map_or(2, |p| p + 1))))) },
-            rows: db.contents_by_provider_id(global.provider_id, search, Sort::Desc, Some(global.list_limit)).map_err(|e| {
-                error!("Could not get contents: `{e}`");
-                Status::InternalServerError
-            })?
+            rows: conn.contents_by_provider_id(
+                        global.provider_id,
+                        search,
+                        Sort::Desc,
+                        Some(global.list_limit)
+                    ).map_err(|e| {
+                        error!("Could not get contents: `{e}`");
+                        Status::InternalServerError
+                    })?
                 .into_iter()
-                .map(|c| {
-                    let channel_item = db.channel_item(c.channel_item_id).unwrap().unwrap();
+                .map(|content| {
+                    let channel_item = conn.channel_item(content.channel_item_id).unwrap().unwrap();
                     Content {
-                        content_id: c.content_id,
-                        description: c.description,
+                        content_id: content.content_id,
+                        description: content.description,
                         link: channel_item.link,
                         time: time(channel_item.pub_date).format(&global.format_time).to_string(),
-                        title: c.title,
+                        title: content.title,
                     }
                 })
                 .collect::<Vec<Content>>(),
@@ -92,25 +101,38 @@ fn index(
 #[get("/<content_id>")]
 fn info(
     content_id: u64,
-    db: &State<Pollable>,
+    db: &State<Database>,
     meta: &State<Meta>,
     global: &State<Global>,
 ) -> Result<Template, Status> {
-    match db.content(content_id).map_err(|e| {
+    let mut conn = db.connection().map_err(|e| {
+        error!("Could not connect database: `{e}`");
+        Status::InternalServerError
+    })?;
+    match conn.content(content_id).map_err(|e| {
         error!("Could not get content `{content_id}`: `{e}`");
         Status::InternalServerError
     })? {
-        Some(c) => {
-            let i = db.channel_item(c.channel_item_id).unwrap().unwrap();
+        Some(content) => {
+            let channel_item = conn
+                .channel_item(content.channel_item_id)
+                .map_err(|e| {
+                    error!("Could not get requested channel item: `{e}`");
+                    Status::InternalServerError
+                })?
+                .ok_or_else(|| {
+                    error!("Could not find requested channel item");
+                    Status::NotFound
+                })?;
             Ok(Template::render(
                 "info",
                 context! {
-                    description: c.description,
-                    link: i.link,
+                    description: content.description,
+                    link: channel_item.link,
                     meta: meta.inner(),
-                    title: format!("{}{S}{}", c.title, meta.title),
-                    name: c.title,
-                    time: time(i.pub_date).format(&global.format_time).to_string(),
+                    title: format!("{}{S}{}", content.title, meta.title),
+                    name: content.title,
+                    time: time(channel_item.pub_date).format(&global.format_time).to_string(),
                 },
             ))
         }
@@ -123,30 +145,43 @@ fn rss(
     search: Option<&str>,
     global: &State<Global>,
     meta: &State<Meta>,
-    db: &State<Pollable>,
+    db: &State<Database>,
 ) -> Result<RawXml<String>, Status> {
-    let mut f = Feed::new(
+    let mut feed = Feed::new(
         &meta.title,
         meta.description.as_deref(),
         1024, // @TODO
     );
-    for c in db
+    let mut conn = db.connection().map_err(|e| {
+        error!("Could not connect database: `{e}`");
+        Status::InternalServerError
+    })?;
+    for content in conn
         .contents_by_provider_id(global.provider_id, search, Sort::Desc, Some(20)) // @TODO
         .map_err(|e| {
             error!("Could not load channel item contents: `{e}`");
             Status::InternalServerError
         })?
     {
-        let channel_item = db.channel_item(c.channel_item_id).unwrap().unwrap();
-        f.push(
-            c.channel_item_id,
+        let channel_item = conn
+            .channel_item(content.channel_item_id)
+            .map_err(|e| {
+                error!("Could not get requested channel item: `{e}`");
+                Status::InternalServerError
+            })?
+            .ok_or_else(|| {
+                error!("Could not find requested channel item");
+                Status::NotFound
+            })?;
+        feed.push(
+            content.channel_item_id,
             time(channel_item.pub_date),
             channel_item.link,
-            c.title,
-            c.description,
+            content.title,
+            content.description,
         )
     }
-    Ok(RawXml(f.commit()))
+    Ok(RawXml(feed.commit()))
 }
 
 #[launch]
@@ -165,7 +200,7 @@ fn rocket() -> _ {
             }
         })
         .manage(
-            Pollable::connect(
+            Database::pool(
                 &config.mysql_host,
                 config.mysql_port,
                 &config.mysql_username,

@@ -1,32 +1,20 @@
-pub mod sort;
-
-pub use sort::Sort;
-
 use crate::table::*;
-use mysql::{Error, Pool, prelude::Queryable};
+use mysql::{Error, Pool, PooledConn, prelude::Queryable};
 
 /// Safe, read-only operations used in client apps like `rssto-http`
-pub struct Pollable {
-    pool: Pool,
+pub struct Connection {
+    conn: PooledConn,
 }
 
-impl Pollable {
-    pub fn connect(
-        host: &str,
-        port: u16,
-        user: &str,
-        password: &str,
-        database: &str,
-    ) -> Result<Self, Error> {
+impl Connection {
+    pub fn create(pool: &Pool) -> Result<Self, Error> {
         Ok(Self {
-            pool: mysql::Pool::new(
-                format!("mysql://{user}:{password}@{host}:{port}/{database}").as_str(),
-            )?,
+            conn: pool.get_conn()?,
         })
     }
 
-    pub fn channel_item(&self, channel_item_id: u64) -> Result<Option<ChannelItem>, Error> {
-        self.pool.get_conn()?.exec_first(
+    pub fn channel_item(&mut self, channel_item_id: u64) -> Result<Option<ChannelItem>, Error> {
+        self.conn.exec_first(
             "SELECT `channel_item_id`,
                     `channel_id`,
                     `pub_date`,
@@ -38,8 +26,8 @@ impl Pollable {
         )
     }
 
-    pub fn content(&self, content_id: u64) -> Result<Option<Content>, Error> {
-        self.pool.get_conn()?.exec_first(
+    pub fn content(&mut self, content_id: u64) -> Result<Option<Content>, Error> {
+        self.conn.exec_first(
             "SELECT `content_id`,
                     `channel_item_id`,
                     `provider_id`,
@@ -50,11 +38,11 @@ impl Pollable {
     }
 
     pub fn contents_total_by_provider_id(
-        &self,
+        &mut self,
         provider_id: Option<u64>,
         keyword: Option<&str>,
     ) -> Result<usize, Error> {
-        let total: Option<usize> = self.pool.get_conn()?.exec_first(
+        let total: Option<usize> = self.conn.exec_first(
             "SELECT COUNT(*) FROM `content` WHERE `provider_id` <=> ? AND `title` LIKE ?",
             (provider_id, like(keyword)),
         )?;
@@ -62,13 +50,13 @@ impl Pollable {
     }
 
     pub fn contents_by_provider_id(
-        &self,
+        &mut self,
         provider_id: Option<u64>,
         keyword: Option<&str>,
         sort: Sort,
         limit: Option<usize>,
     ) -> Result<Vec<Content>, Error> {
-        self.pool.get_conn()?.exec(format!(
+        self.conn.exec(format!(
             "SELECT `content_id`,
                     `channel_item_id`,
                     `provider_id`,
@@ -79,8 +67,8 @@ impl Pollable {
         (provider_id, like(keyword), ))
     }
 
-    pub fn content_image(&self, content_image_id: u64) -> Result<Option<ContentImage>, Error> {
-        self.pool.get_conn()?.exec_first(
+    pub fn content_image(&mut self, content_image_id: u64) -> Result<Option<ContentImage>, Error> {
+        self.conn.exec_first(
             "SELECT `content_image_id`,
                     `content_id`,
                     `image_id`,
@@ -92,17 +80,24 @@ impl Pollable {
         )
     }
 
-    pub fn images(&self, limit: Option<usize>) -> Result<Vec<Image>, Error> {
-        self.pool.get_conn()?.query(format!(
+    pub fn images(&mut self, limit: Option<usize>) -> Result<Vec<Image>, Error> {
+        self.conn.query(format!(
             "SELECT `image_id`, `source`, `data` FROM `image` LIMIT {}",
             limit.unwrap_or(DEFAULT_LIMIT)
         ))
     }
 
-    pub fn insert_provider(&self, name: &str) -> Result<u64, Error> {
-        let mut c = self.pool.get_conn()?;
-        c.exec_drop("INSERT INTO `provider` SET `name` = ?", (name,))?;
-        Ok(c.last_insert_id())
+    pub fn provider_id_by_name(&mut self, name: &str) -> Result<Option<u64>, Error> {
+        self.conn.exec_first(
+            "SELECT `provider_id` FROM `provider` WHERE `name` = ?",
+            (name,),
+        )
+    }
+
+    pub fn insert_provider(&mut self, name: &str) -> Result<u64, Error> {
+        self.conn
+            .exec_drop("INSERT INTO `provider` SET `name` = ?", (name,))?;
+        Ok(self.conn.last_insert_id())
     }
 }
 

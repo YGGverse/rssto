@@ -15,6 +15,6 @@ chrono = "0.4.42"
 clap = { version = "4.5.54", features = ["derive"] }
 lancor = "0.1.1"
 log = "0.4.29"
-mysql = { package = "rssto-mysql", version = "0.1.0", features = ["transactional"], path = "../mysql" }
+mysql = { package = "rssto-mysql", version = "0.1.0", features = ["transaction"], path = "../mysql" }
 tokio = { version = "1.0", features = ["full"] }
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }

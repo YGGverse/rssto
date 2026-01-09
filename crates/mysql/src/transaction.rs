@@ -1,29 +1,26 @@
 use crate::table::*;
-use mysql::{Error, Pool, Transaction, TxOpts, prelude::Queryable};
+use mysql::{Error, Pool, TxOpts, prelude::Queryable};
 
 /// Safe, optimized read/write operations
 /// mostly required by the `rssto-crawler` and `rssto-llm`
 /// * all members implementation requires `commit` action
-pub struct Transactional {
-    tx: Transaction<'static>,
+pub struct Transaction {
+    tx: mysql::Transaction<'static>,
 }
 
-impl Transactional {
-    pub fn connect(
-        host: &str,
-        port: u16,
-        user: &str,
-        password: &str,
-        database: &str,
-    ) -> Result<Self, Error> {
+impl Transaction {
+    pub fn create(pool: &Pool) -> Result<Self, Error> {
         Ok(Self {
-            tx: Pool::new(format!("mysql://{user}:{password}@{host}:{port}/{database}").as_str())?
-                .start_transaction(TxOpts::default())?,
+            tx: pool.start_transaction(TxOpts::default())?,
         })
     }
 
     pub fn commit(self) -> Result<(), Error> {
         self.tx.commit()
+    }
+
+    pub fn rollback(self) -> Result<(), Error> {
+        self.tx.rollback()
     }
 
     pub fn channel_id_by_url(&mut self, url: &str) -> Result<Option<u64>, Error> {
@@ -130,19 +127,6 @@ impl Transactional {
             "INSERT INTO `image` SET `source` = ?, `data` = ?",
             (source, data),
         )?;
-        Ok(self.tx.last_insert_id().unwrap())
-    }
-
-    pub fn provider_id_by_name(&mut self, name: &str) -> Result<Option<u64>, Error> {
-        self.tx.exec_first(
-            "SELECT `provider_id` FROM `provider` WHERE `name` = ?",
-            (name,),
-        )
-    }
-
-    pub fn insert_provider(&mut self, name: &str) -> Result<u64, Error> {
-        self.tx
-            .exec_drop("INSERT INTO `provider` SET `name` = ?", (name,))?;
         Ok(self.tx.last_insert_id().unwrap())
     }
 }
