@@ -9,5 +9,10 @@ keywords = ["rssto", "database", "mysql", "library", "driver", "api"]
 # categories = []
 repository = "https://github.com/YGGverse/rssto"
 
+[features]
+default = ["pollable"]
+pollable = []
+transactional = []
+
 [dependencies]
 mysql = "26.0.1"

@@ -3,7 +3,7 @@ mod config;
 
 use anyhow::Result;
 use log::{debug, info, warn};
-use mysql::Mysql;
+use mysql::Transactional;
 use reqwest::blocking::get;
 
 fn main() -> Result<()> {
@@ -28,22 +28,27 @@ fn main() -> Result<()> {
 
     let argument = Argument::parse();
     let config: config::Config = toml::from_str(&read_to_string(argument.config)?)?;
-    let database = Mysql::connect(
-        &config.mysql.host,
-        config.mysql.port,
-        &config.mysql.user,
-        &config.mysql.password,
-        &config.mysql.database,
-    )?;
 
     info!("Crawler started");
     loop {
         debug!("Begin new crawl queue...");
-        for c in &config.channel {
-            debug!("Update `{}`...", c.url);
-            if let Err(e) = crawl(&database, c) {
-                warn!("Channel `{}` update failed: `{e}`", c.url)
+        {
+            // disconnect from the database immediately when exiting this scope,
+            // in case the `update` queue is enabled and pending for a while.
+            let mut db = Transactional::connect(
+                &config.mysql.host,
+                config.mysql.port,
+                &config.mysql.user,
+                &config.mysql.password,
+                &config.mysql.database,
+            )?;
+            for c in &config.channel {
+                debug!("Update `{}`...", c.url);
+                if let Err(e) = crawl(&mut db, c) {
+                    warn!("Channel `{}` update failed: `{e}`", c.url)
+                }
             }
+            db.commit()?
         }
         debug!("Crawl queue completed");
         if let Some(update) = config.update {
@@ -55,7 +60,7 @@ fn main() -> Result<()> {
     }
 }
 
-fn crawl(db: &Mysql, channel_config: &config::Channel) -> Result<()> {
+fn crawl(db: &mut Transactional, channel_config: &config::Channel) -> Result<()> {
     use rss::Channel;
     use scraper::Selector;
 
@@ -82,8 +87,8 @@ fn crawl(db: &Mysql, channel_config: &config::Channel) -> Result<()> {
 
     let channel_items_limit = channel_config.items_limit.unwrap_or(channel_items.len());
 
-    let channel_id = match db.channels_by_url(&channel_url, Some(1))?.first() {
-        Some(result) => result.channel_id,
+    let channel_id = match db.channel_id_by_url(&channel_url)? {
+        Some(channel_id) => channel_id,
         None => db.insert_channel(&channel_url)?,
     };
 
@@ -115,10 +120,7 @@ fn crawl(db: &Mysql, channel_config: &config::Channel) -> Result<()> {
                 continue;
             }
         };
-        if !db
-            .channel_items_by_channel_id_guid(channel_id, guid, Some(1))?
-            .is_empty()
-        {
+        if db.channel_items_total_by_channel_id_guid(channel_id, guid)? > 0 {
             continue; // skip next steps as processed
         }
         let channel_item_id = db.insert_channel_item(
@@ -186,10 +188,6 @@ fn crawl(db: &Mysql, channel_config: &config::Channel) -> Result<()> {
                 }
             },
         };
-        assert!(
-            db.contents_by_channel_item_id_provider_id(channel_item_id, None, Some(1))?
-                .is_empty()
-        );
         let _content_id = db.insert_content(channel_item_id, None, &title, &description)?;
         // @TODO preload media
     }

@@ -11,7 +11,7 @@ use config::Config;
 use feed::Feed;
 use global::Global;
 use meta::Meta;
-use mysql::{Mysql, Sort};
+use mysql::{Pollable, pollable::Sort};
 use rocket::{State, http::Status, response::content::RawXml, serde::Serialize};
 use rocket_dyn_templates::{Template, context};
 
@@ -19,7 +19,7 @@ use rocket_dyn_templates::{Template, context};
 fn index(
     search: Option<&str>,
     page: Option<usize>,
-    db: &State<Mysql>,
+    db: &State<Pollable>,
     meta: &State<Meta>,
     global: &State<Global>,
 ) -> Result<Template, Status> {
@@ -92,7 +92,7 @@ fn index(
 #[get("/<content_id>")]
 fn info(
     content_id: u64,
-    db: &State<Mysql>,
+    db: &State<Pollable>,
     meta: &State<Meta>,
     global: &State<Global>,
 ) -> Result<Template, Status> {
@@ -123,7 +123,7 @@ fn rss(
     search: Option<&str>,
     global: &State<Global>,
     meta: &State<Meta>,
-    db: &State<Mysql>,
+    db: &State<Pollable>,
 ) -> Result<RawXml<String>, Status> {
     let mut f = Feed::new(
         &meta.title,
@@ -165,7 +165,7 @@ fn rocket() -> _ {
             }
         })
         .manage(
-            Mysql::connect(
+            Pollable::connect(
                 &config.mysql_host,
                 config.mysql_port,
                 &config.mysql_username,
