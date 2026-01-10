@@ -1,7 +1,7 @@
 mod argument;
+mod config;
 
 use anyhow::Result;
-use argument::Argument;
 use mysql::Database;
 
 #[tokio::main]
@@ -27,34 +27,36 @@ async fn main() -> Result<()> {
             .init()
     }
 
-    let arg = Argument::parse();
+    let argument = argument::Argument::parse();
+    let config: config::Config = toml::from_str(&std::fs::read_to_string(argument.config)?)?;
+
     let llm = LlamaCppClient::new(format!(
         "{}://{}:{}",
-        arg.llm_scheme, arg.llm_host, arg.llm_port
+        config.llm.scheme, config.llm.host, config.llm.port
     ))?;
     let db = Database::pool(
-        &arg.mysql_host,
-        arg.mysql_port,
-        &arg.mysql_username,
-        &arg.mysql_password,
-        &arg.mysql_database,
+        &config.mysql.host.to_string(),
+        config.mysql.port,
+        &config.mysql.username,
+        &config.mysql.password,
+        &config.mysql.database,
     )?;
 
     let provider_id = {
         let mut conn = db.connection()?;
-        match conn.provider_id_by_name(&arg.llm_model)? {
+        match conn.provider_id_by_name(&config.llm.model)? {
             Some(provider_id) => {
                 debug!(
                     "Use existing DB provider #{} matches model name `{}`",
-                    provider_id, &arg.llm_model
+                    provider_id, &config.llm.model
                 );
                 provider_id
             }
             None => {
-                let provider_id = conn.insert_provider(&arg.llm_model)?;
+                let provider_id = conn.insert_provider(&config.llm.model)?;
                 info!(
                     "Provider `{}` not found in database, created new one with ID `{provider_id}`",
-                    &arg.llm_model
+                    &config.llm.model
                 );
                 provider_id
             }
@@ -71,15 +73,15 @@ async fn main() -> Result<()> {
                 source.content_id
             );
 
-            let title =
-                llm.chat_completion(ChatCompletionRequest::new(&arg.llm_model).message(
-                    Message::user(format!("{}\n{}", arg.llm_message, source.title)),
+            let title = llm
+                .chat_completion(ChatCompletionRequest::new(&config.llm.model).message(
+                    Message::user(format!("{}\n{}", config.llm.message, source.title)),
                 ))
                 .await?;
 
-            let description =
-                llm.chat_completion(ChatCompletionRequest::new(&arg.llm_model).message(
-                    Message::user(format!("{}\n{}", arg.llm_message, source.description)),
+            let description = llm
+                .chat_completion(ChatCompletionRequest::new(&config.llm.model).message(
+                    Message::user(format!("{}\n{}", config.llm.message, source.description)),
                 ))
                 .await?;
 
@@ -97,7 +99,7 @@ async fn main() -> Result<()> {
         }
         tx.commit()?;
         debug!("Queue completed");
-        if let Some(update) = arg.update {
+        if let Some(update) = config.update {
             debug!("Wait {update} seconds to continue...");
             std::thread::sleep(std::time::Duration::from_secs(update))
         } else {

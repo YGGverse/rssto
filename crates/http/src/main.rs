@@ -1,13 +1,13 @@
 #[macro_use]
 extern crate rocket;
 
+mod argument;
 mod config;
 mod feed;
 mod global;
 mod meta;
 
 use chrono::{DateTime, Utc};
-use config::Config;
 use feed::Feed;
 use global::Global;
 use meta::Meta;
@@ -187,7 +187,9 @@ fn rss(
 #[launch]
 fn rocket() -> _ {
     use clap::Parser;
-    let config = Config::parse();
+    let argument = argument::Argument::parse();
+    let config: config::Config =
+        toml::from_str(&std::fs::read_to_string(argument.config).unwrap()).unwrap();
     rocket::build()
         .attach(Template::fairing())
         .configure(rocket::Config {
@@ -201,11 +203,11 @@ fn rocket() -> _ {
         })
         .manage(
             Database::pool(
-                &config.mysql_host,
-                config.mysql_port,
-                &config.mysql_username,
-                &config.mysql_password,
-                &config.mysql_database,
+                &config.mysql.host,
+                config.mysql.port,
+                &config.mysql.username,
+                &config.mysql.password,
+                &config.mysql.database,
             )
             .unwrap(),
         )

@@ -8,7 +8,7 @@ pub struct Mysql {
     pub host: String,
     pub password: String,
     pub port: u16,
-    pub user: String,
+    pub username: String,
 }
 
 #[derive(Debug, Deserialize)]

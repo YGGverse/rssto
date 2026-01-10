@@ -30,7 +30,7 @@ fn main() -> Result<()> {
     let db = mysql::Database::pool(
         &config.mysql.host,
         config.mysql.port,
-        &config.mysql.user,
+        &config.mysql.username,
         &config.mysql.password,
         &config.mysql.database,
     )?;

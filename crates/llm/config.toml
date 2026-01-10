@@ -1,0 +1,22 @@
+# Rescan database for new subjects, in seconds
+# * process once if not defined
+# update = 900
+
+# Database connection setup
+# * see crates/mysql/database
+[mysql]
+host = "localhost"
+port = 3306
+username = ""
+password = ""
+database = "rssto"
+
+# LLM connection setup
+[llm]
+scheme = "http"
+host = "127.0.0.1"
+port = 8080
+# Model name
+model = "ggml-org/gemma-3-1b-it-GGUF"
+# Initial message for the `content` subject (e.g. `translate to...`)
+message = "translate to english:"

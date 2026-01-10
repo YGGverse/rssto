@@ -1,0 +1,33 @@
+title = "rssto"
+#description = ""
+
+# Replace image sources with local
+# * if crawled with the `persist_images_selector` selector
+local_images = true
+
+format_time = "%d/%m/%Y %H:%M"
+
+# Provider ID (`provider` table)
+# * None for the original content
+# provider_id = 1
+
+# Default listing limit
+list_limit = 20
+
+# Bind server on given host
+host = "127.0.0.1"
+
+# Bind server on given port
+port = 8000
+
+#Configure instance in the debug mode
+debug = true
+
+# Database connection setup
+# * see crates/mysql/database
+[mysql]
+host = "localhost"
+port = 3306
+username = ""
+password = ""
+database = "rssto"

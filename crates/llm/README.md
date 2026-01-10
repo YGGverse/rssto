@@ -17,12 +17,6 @@ llama-server -hf ggml-org/gemma-3-1b-it-GGUF
 
 ```
 cd rssto/crates/rssto-llm
-cargo run -- --mysql-username {USER} \
-             --mysql-password {PASS} \
-             --mysql-database {NAME} \
-             --llm-host {HOST}       \
-             --llm-port {PORT}       \
-             --llm-model {MODEL}     \
-             --llm-message {MESSAGE}
+cargo run -- -c /path/to/config.toml
 ```
 * see `--help` to display all supported options
