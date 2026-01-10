@@ -77,7 +77,7 @@ fn index(
                         global.provider_id,
                         search,
                         Sort::Desc,
-                        page.map(|p| p - 1 * global.list_limit),
+                        page.map(|p| if p > 1 { p - 1 } else { 1 } * global.list_limit),
                         Some(global.list_limit)
                     ).map_err(|e| {
                         error!("Could not get contents: `{e}`");
