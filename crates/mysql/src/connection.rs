@@ -80,11 +80,15 @@ impl Connection {
         )
     }
 
-    pub fn images(&mut self, limit: Option<usize>) -> Result<Vec<Image>, Error> {
-        self.conn.query(format!(
-            "SELECT `image_id`, `source`, `data` FROM `image` LIMIT {}",
-            limit.unwrap_or(DEFAULT_LIMIT)
-        ))
+    pub fn image(&mut self, image_id: u64) -> Result<Option<Image>, Error> {
+        self.conn.exec_first(
+            "SELECT `image_id`,
+                    `sha256`,
+                    `src`,
+                    `url`,
+                    `data` FROM `image` WHERE `image_id` = ?",
+            (image_id,),
+        )
     }
 
     pub fn provider_id_by_name(&mut self, name: &str) -> Result<Option<u64>, Error> {

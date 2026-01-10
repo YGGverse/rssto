@@ -12,7 +12,12 @@ use feed::Feed;
 use global::Global;
 use meta::Meta;
 use mysql::{Database, table::Sort};
-use rocket::{State, http::Status, response::content::RawXml, serde::Serialize};
+use rocket::{
+    State,
+    http::{ContentType, Status},
+    response::content::RawXml,
+    serde::Serialize,
+};
 use rocket_dyn_templates::{Template, context};
 
 #[get("/?<search>&<page>")]
@@ -25,9 +30,8 @@ fn index(
 ) -> Result<Template, Status> {
     #[derive(Serialize)]
     #[serde(crate = "rocket::serde")]
-    struct Content {
+    struct Row {
         content_id: u64,
-        description: String,
         link: String,
         time: String,
         title: String,
@@ -81,15 +85,14 @@ fn index(
                 .into_iter()
                 .map(|content| {
                     let channel_item = conn.channel_item(content.channel_item_id).unwrap().unwrap();
-                    Content {
+                    Row {
                         content_id: content.content_id,
-                        description: content.description,
                         link: channel_item.link,
                         time: time(channel_item.pub_date).format(&global.format_time).to_string(),
                         title: content.title,
                     }
                 })
-                .collect::<Vec<Content>>(),
+                .collect::<Vec<Row>>(),
             page: page.unwrap_or(1),
             pages: (total as f64 / global.list_limit as f64).ceil(),
             total,
@@ -136,6 +139,21 @@ fn info(
                 },
             ))
         }
+        None => Err(Status::NotFound),
+    }
+}
+
+#[get("/image/<image_id>")]
+fn image(image_id: u64, db: &State<Database>) -> Result<(ContentType, Vec<u8>), Status> {
+    let mut conn = db.connection().map_err(|e| {
+        error!("Could not connect database: `{e}`");
+        Status::InternalServerError
+    })?;
+    match conn.image(image_id).map_err(|e| {
+        error!("Could not get content image `{image_id}`: `{e}`");
+        Status::InternalServerError
+    })? {
+        Some(image) => Ok((ContentType::Bytes, image.data)),
         None => Err(Status::NotFound),
     }
 }
@@ -221,7 +239,7 @@ fn rocket() -> _ {
             title: config.title,
             version: env!("CARGO_PKG_VERSION").into(),
         })
-        .mount("/", routes![index, rss, info])
+        .mount("/", routes![index, rss, info, image])
 }
 
 const S: &str = " • ";

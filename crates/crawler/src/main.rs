@@ -171,7 +171,10 @@ fn crawl(tx: &mut mysql::Transaction, channel_config: &config::Channel) -> Resul
                         }
                     };
                     let content_image_id = tx.insert_content_image(content_id, image_id)?;
-                    debug!("Add content image relationship #{content_image_id}")
+                    debug!("Add content image relationship #{content_image_id}");
+                    let uri = format!("/image/{image_id}");
+                    tx.replace_content_description(content_id, src, &uri)?;
+                    debug!("Replace content image in description from `{src}` to `{uri}`")
                 }
             }
         }

@@ -107,6 +107,19 @@ impl Transaction {
         Ok(self.tx.last_insert_id().unwrap())
     }
 
+    pub fn replace_content_description(
+        &mut self,
+        content_id: u64,
+        from: &str,
+        to: &str,
+    ) -> Result<(), Error> {
+        self.tx.exec_drop(
+            "UPDATE `content` SET `description` = REPLACE(`description`, ?, ?)
+                              WHERE`content_id` = ?",
+            (from, to, content_id),
+        )
+    }
+
     pub fn insert_content_image(&mut self, content_id: u64, image_id: u64) -> Result<u64, Error> {
         self.tx.exec_drop(
             "INSERT INTO `content_image` SET `content_id` = ?, `image_id` = ?",

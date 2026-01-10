@@ -1,10 +1,6 @@
 title = "rssto"
 #description = ""
 
-# Replace image sources with local
-# * if crawled with the `persist_images_selector` selector
-local_images = true
-
 format_time = "%d/%m/%Y %H:%M"
 
 # Provider ID (`provider` table)

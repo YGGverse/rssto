@@ -5,10 +5,7 @@
             <div>
                 <a name="{{ row.content_id }}"></a>
                 <h2><a href="{{ row.content_id }}">{{ row.title }}</a></h2>
-                {% if row.time %}<p>{{ row.time }}</p>{% endif %}
-                <div>
-                    {{ row.description | safe }}
-                </div>
+                {{ row.time }}
             </div>
         {% endfor %}
     {% else %}
