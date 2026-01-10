@@ -5,7 +5,7 @@ edition = "2024"
 license = "MIT"
 readme = "README.md"
 description = "Shared MySQL database library"
-keywords = ["rssto", "database", "mysql", "library", "driver", "api"]
+keywords = ["rssto", "database", "mysql", "library", "api"]
 # categories = []
 repository = "https://github.com/YGGverse/rssto"
 
