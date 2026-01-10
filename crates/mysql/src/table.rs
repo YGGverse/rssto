@@ -37,7 +37,13 @@ pub struct Provider {
 #[derive(Debug, PartialEq, Eq, FromRow)]
 pub struct Image {
     pub image_id: u64,
-    pub source: String,
+    /// Keep image unique by comparing its data hash
+    pub sha256: String,
+    /// Original `src` tag value to post-replacing
+    pub src: Option<String>,
+    /// Resolved absolute URL
+    pub url: Option<String>,
+    /// Image data, MEDIUMBLOB (16M)
     pub data: Vec<u8>,
 }
 

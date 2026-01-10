@@ -19,6 +19,7 @@ reqwest = { version = "0.13.1", features = ["blocking"] }
 rss = "2.0.12"
 scraper = { version = "0.25.0", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
+sha2 = "0.10.9"
 toml = "0.9.10"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 url = { version = "2.5.8", features = ["serde"] }

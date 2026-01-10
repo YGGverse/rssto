@@ -27,6 +27,9 @@ pub struct Channel {
     /// Scrape description by CSS selector
     /// * None to ignore
     pub content_description_selector: Option<Selector>,
+    /// Preload content images locally if `Some`
+    /// * currently stored in the database
+    pub persist_images_selector: Option<Selector>,
 }
 
 #[derive(Debug, Deserialize)]

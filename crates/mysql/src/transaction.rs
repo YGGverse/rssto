@@ -115,17 +115,23 @@ impl Transaction {
         Ok(self.tx.last_insert_id().unwrap())
     }
 
-    pub fn images_total_by_source(&mut self, source: &str) -> Result<usize, Error> {
-        Ok(self
-            .tx
-            .exec_first("SELECT COUNT(*) FROM `image` WHERE `source` = ?", (source,))?
-            .unwrap_or(0))
+    pub fn image_id_by_sha256(&mut self, sha256: &str) -> Result<Option<u64>, Error> {
+        self.tx.exec_first(
+            "SELECT `image_id` FROM `image` WHERE `sha256` = ? LIMIT 1",
+            (sha256,),
+        )
     }
 
-    pub fn insert_image(&mut self, source: &str, data: &[u8]) -> Result<u64, Error> {
+    pub fn insert_image(
+        &mut self,
+        sha256: &str,
+        src: Option<&str>,
+        url: Option<&str>,
+        data: &[u8],
+    ) -> Result<u64, Error> {
         self.tx.exec_drop(
-            "INSERT INTO `image` SET `source` = ?, `data` = ?",
-            (source, data),
+            "INSERT INTO `image` SET `sha256` = ?, `src` = ?, `url` = ?, `data` = ?",
+            (sha256, src, url, data),
         )?;
         Ok(self.tx.last_insert_id().unwrap())
     }
