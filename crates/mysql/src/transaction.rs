@@ -56,8 +56,8 @@ impl Transaction {
         pub_date: i64,
         guid: &str,
         link: &str,
-        title: Option<&str>,
-        description: Option<&str>,
+        title: Option<String>,
+        description: Option<String>,
     ) -> Result<u64, Error> {
         self.tx.exec_drop(
             "INSERT INTO `channel_item` SET `channel_id` = ?,

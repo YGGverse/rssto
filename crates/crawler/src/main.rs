@@ -60,6 +60,15 @@ fn main() -> Result<()> {
 }
 
 fn crawl(tx: &mut mysql::Transaction, channel_config: &config::Channel) -> Result<()> {
+    use ammonia::clean;
+
+    fn strip_tags(html: &str) -> String {
+        ammonia::Builder::new()
+            .tags(std::collections::HashSet::new())
+            .clean(html)
+            .to_string()
+    }
+
     let channel_url = channel_config.url.to_string(); // allocate once
 
     let channel_items =
@@ -104,12 +113,12 @@ fn crawl(tx: &mut mysql::Transaction, channel_config: &config::Channel) -> Resul
             guid,
             link,
             if channel_config.persist_item_title {
-                channel_item.title()
+                channel_item.title().map(strip_tags)
             } else {
                 None
             },
             if channel_config.persist_item_description {
-                channel_item.description()
+                channel_item.description().map(clean)
             } else {
                 None
             },
@@ -117,17 +126,7 @@ fn crawl(tx: &mut mysql::Transaction, channel_config: &config::Channel) -> Resul
         info!("Register new channel item #{channel_item_id} ({link})");
         // preload remote content..
         let html = scraper::Html::parse_document(&get(link)?.text()?);
-        let title = match channel_config.content_title_selector {
-            Some(ref selector) => match html.select(selector).next() {
-                Some(title) => title.inner_html(),
-                None => bail!("Could not scrape `title` selector from `{link}`"),
-            },
-            None => match channel_item.title {
-                Some(ref title) => title.clone(),
-                None => bail!("Could not assign `title` from channel item for content in `{link}`"),
-            },
-        };
-        let description = match channel_config.content_description_selector {
+        let description = clean(&match channel_config.content_description_selector {
             Some(ref selector) => match html.select(selector).next() {
                 Some(description) => description.inner_html(),
                 None => bail!("Could not scrape `description` selector from `{link}`"),
@@ -138,9 +137,26 @@ fn crawl(tx: &mut mysql::Transaction, channel_config: &config::Channel) -> Resul
                     bail!("Could not assign `description` from channel item for `{link}`")
                 }
             },
-        };
-        let content_id = tx.insert_content(channel_item_id, None, &title, &description)?;
-        info!("Add new content record #{content_id} ({title})");
+        });
+        let content_id = tx.insert_content(
+            channel_item_id,
+            None,
+            strip_tags(&match channel_config.content_title_selector {
+                Some(ref selector) => match html.select(selector).next() {
+                    Some(title) => title.inner_html(),
+                    None => bail!("Could not scrape `title` selector from `{link}`"),
+                },
+                None => match channel_item.title {
+                    Some(ref title) => title.clone(),
+                    None => {
+                        bail!("Could not assign `title` from channel item for content in `{link}`")
+                    }
+                },
+            })
+            .trim(),
+            clean(&description).trim(),
+        )?;
+        info!("Add new content record #{content_id}");
         // persist images if enabled
         if let Some(ref selector) = channel_config.persist_images_selector {
             use sha2::{Digest, Sha256};
