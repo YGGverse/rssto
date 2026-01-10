@@ -77,6 +77,7 @@ fn index(
                         global.provider_id,
                         search,
                         Sort::Desc,
+                        page.map(|p| p - 1 * global.list_limit),
                         Some(global.list_limit)
                     ).map_err(|e| {
                         error!("Could not get contents: `{e}`");
@@ -175,7 +176,13 @@ fn rss(
         Status::InternalServerError
     })?;
     for content in conn
-        .contents_by_provider_id(global.provider_id, search, Sort::Desc, Some(20)) // @TODO
+        .contents_by_provider_id(
+            global.provider_id,
+            search,
+            Sort::Desc,
+            None,
+            Some(global.list_limit),
+        )
         .map_err(|e| {
             error!("Could not load channel item contents: `{e}`");
             Status::InternalServerError

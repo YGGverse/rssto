@@ -54,6 +54,7 @@ impl Connection {
         provider_id: Option<u64>,
         keyword: Option<&str>,
         sort: Sort,
+        start: Option<usize>,
         limit: Option<usize>,
     ) -> Result<Vec<Content>, Error> {
         self.conn.exec(format!(
@@ -61,7 +62,8 @@ impl Connection {
                     `channel_item_id`,
                     `provider_id`,
                     `title`,
-                    `description` FROM `content` WHERE `provider_id` <=> ? AND `title` LIKE ? ORDER BY `content_id` {sort} LIMIT {}",
+                    `description` FROM `content` WHERE `provider_id` <=> ? AND `title` LIKE ? ORDER BY `content_id` {sort} LIMIT {},{}",
+            start.unwrap_or(0),
             limit.unwrap_or(DEFAULT_LIMIT)
         ),
         (provider_id, like(keyword), ))
