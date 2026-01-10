@@ -15,18 +15,21 @@ pub struct Mysql {
 pub struct Channel {
     /// RSS feed source
     pub url: Url,
-    /// Limit channel items (unlimited by default)
+    /// Limit latest channel items to crawl (unlimited by default)
     pub items_limit: Option<usize>,
-    /// Save item title
+    /// Save Channel item title in the database (currently not in use)
     pub persist_item_title: bool,
-    /// Save item description
+    /// Save Channel item description in the database (currently not in use)
     pub persist_item_description: bool,
     /// Scrape title by CSS selector
-    /// * None to ignore
+    /// * None to use Channel item title if exists or fail to continue
     pub content_title_selector: Option<Selector>,
     /// Scrape description by CSS selector
-    /// * None to ignore
+    /// * None to use Channel item description if exists or fail to continue
     pub content_description_selector: Option<Selector>,
+    /// Allowed tags
+    /// * empty to strip all tags (default)
+    pub allowed_tags: std::collections::HashSet<String>,
     /// Preload content images locally if `Some`
     /// * currently stored in the database
     pub persist_images_selector: Option<Selector>,

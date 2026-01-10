@@ -4,29 +4,71 @@ update = 900
 # Database connection setup
 # * see crates/mysql/database
 [mysql]
-host = "localhost"
-port = 3306
-username = ""
-password = ""
-database = "rssto"
+
+    host = "localhost"
+    port = 3306
+    username = ""
+    password = ""
+    database = "rssto"
 
 # Content sources (unlimited)
 [[channel]]
-url = "https://"
-items_limit = 20
-persist_item_title = true
-persist_item_description = true
-# optional:
-# content_title_selector = "h1"
-# content_description_selector = "article"
-# persist_images_selector = "img"
+
+    # RSS feed source
+    url = "https://1"
+
+    # Limit latest channel items to crawl (unlimited by default)
+    items_limit = 20
+
+    # Save Channel item title in the database (currently not in use)
+    persist_item_title = true
+
+    #Save Channel item description in the database (currently not in use)
+    persist_item_description = true
+
+    # Allowed tags
+    # * empty to strip all tags (default)
+    allowed_tags = []
+
+    # Scrape title by CSS selector
+    # * None to use Channel item title if exists or fail to continue
+    # content_title_selector = "h1"
+
+    #  Scrape description by CSS selector
+    #  * None to use Channel item description if exists or fail to continue
+    # content_description_selector = "article"
+
+    # Preload content images locally if `Some`
+    # * currently stored in the database
+    # persist_images_selector = "img"
+
 
 [[channel]]
-url = "https://"
-items_limit = 20
-persist_item_title = true
-persist_item_description = true
-# optional:
-# content_title_selector = "h1"
-# content_description_selector = "article"
-# persist_images_selector = "img"
+
+    # RSS feed source
+    url = "https://2"
+
+    # Limit latest channel items to crawl (unlimited by default)
+    items_limit = 20
+
+    # Save Channel item title in the database (currently not in use)
+    persist_item_title = true
+
+    #Save Channel item description in the database (currently not in use)
+    persist_item_description = true
+
+    # Allowed tags
+    # * empty to strip all tags (default)
+    allowed_tags = []
+
+    # Scrape title by CSS selector
+    # * None to use Channel item title if exists or fail to continue
+    # content_title_selector = "h1"
+
+    #  Scrape description by CSS selector
+    #  * None to use Channel item description if exists or fail to continue
+    # content_description_selector = "article"
+
+    # Preload content images locally if `Some`
+    # * currently stored in the database
+    # persist_images_selector = "img"

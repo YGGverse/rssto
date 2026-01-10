@@ -60,11 +60,12 @@ fn main() -> Result<()> {
 }
 
 fn crawl(tx: &mut mysql::Transaction, channel_config: &config::Channel) -> Result<()> {
-    use ammonia::clean;
+    use std::collections::HashSet;
 
-    fn strip_tags(html: &str) -> String {
+    /// Removes all tags from `html` excluding `allowed_tags` or all if None
+    fn strip_tags(html: &str, allowed_tags: Option<&HashSet<String>>) -> String {
         ammonia::Builder::new()
-            .tags(std::collections::HashSet::new())
+            .tags(allowed_tags.map_or(HashSet::new(), |a| a.iter().map(|t| t.as_str()).collect()))
             .clean(html)
             .to_string()
     }
@@ -113,12 +114,14 @@ fn crawl(tx: &mut mysql::Transaction, channel_config: &config::Channel) -> Resul
             guid,
             link,
             if channel_config.persist_item_title {
-                channel_item.title().map(strip_tags)
+                channel_item.title().map(|s| strip_tags(s, None))
             } else {
                 None
             },
             if channel_config.persist_item_description {
-                channel_item.description().map(clean)
+                channel_item
+                    .description()
+                    .map(|s| strip_tags(s, Some(&channel_config.allowed_tags)))
             } else {
                 None
             },
@@ -126,35 +129,43 @@ fn crawl(tx: &mut mysql::Transaction, channel_config: &config::Channel) -> Resul
         info!("Register new channel item #{channel_item_id} ({link})");
         // preload remote content..
         let html = scraper::Html::parse_document(&get(link)?.text()?);
-        let description = clean(&match channel_config.content_description_selector {
-            Some(ref selector) => match html.select(selector).next() {
-                Some(description) => description.inner_html(),
-                None => bail!("Could not scrape `description` selector from `{link}`"),
+        let description = strip_tags(
+            &match channel_config.content_description_selector {
+                Some(ref selector) => match html.select(selector).next() {
+                    Some(description) => description.inner_html(),
+                    None => bail!("Could not scrape `description` selector from `{link}`"),
+                },
+                None => match channel_item.description {
+                    Some(ref description) => description.clone(),
+                    None => {
+                        bail!("Could not assign `description` from channel item for `{link}`")
+                    }
+                },
             },
-            None => match channel_item.description {
-                Some(ref description) => description.clone(),
-                None => {
-                    bail!("Could not assign `description` from channel item for `{link}`")
-                }
-            },
-        });
+            Some(&channel_config.allowed_tags),
+        );
         let content_id = tx.insert_content(
             channel_item_id,
             None,
-            strip_tags(&match channel_config.content_title_selector {
-                Some(ref selector) => match html.select(selector).next() {
-                    Some(title) => title.inner_html(),
-                    None => bail!("Could not scrape `title` selector from `{link}`"),
+            strip_tags(
+                &match channel_config.content_title_selector {
+                    Some(ref selector) => match html.select(selector).next() {
+                        Some(title) => title.inner_html(),
+                        None => bail!("Could not scrape `title` selector from `{link}`"),
+                    },
+                    None => match channel_item.title {
+                        Some(ref title) => title.clone(),
+                        None => {
+                            bail!(
+                                "Could not assign `title` from channel item for content in `{link}`"
+                            )
+                        }
+                    },
                 },
-                None => match channel_item.title {
-                    Some(ref title) => title.clone(),
-                    None => {
-                        bail!("Could not assign `title` from channel item for content in `{link}`")
-                    }
-                },
-            })
+                None,
+            )
             .trim(),
-            clean(&description).trim(),
+            description.trim(),
         )?;
         info!("Add new content record #{content_id}");
         // persist images if enabled
