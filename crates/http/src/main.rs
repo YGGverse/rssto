@@ -50,7 +50,7 @@ fn index(
         "index",
         context! {
             title: {
-                let mut t = String::new();
+                let mut t = String::with_capacity(9);
                 if let Some(q) = search && !q.is_empty() {
                     t.push_str(q);
                     t.push_str(S);
