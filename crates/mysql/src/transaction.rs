@@ -36,6 +36,23 @@ impl Transaction {
         Ok(self.tx.last_insert_id().unwrap())
     }
 
+    pub fn insert_channel_description(
+        &mut self,
+        channel_id: u64,
+        provider_id: Option<u64>,
+        title: Option<String>,
+        description: Option<String>,
+    ) -> Result<u64, Error> {
+        self.tx.exec_drop(
+            "INSERT INTO `channel_description` SET `channel_id` = ?,
+                                                   `provider_id` = ?,
+                                                   `title` = ?,
+                                                   `description` = ?",
+            (channel_id, provider_id, title, description),
+        )?;
+        Ok(self.tx.last_insert_id().unwrap())
+    }
+
     pub fn channel_items_total_by_channel_id_guid(
         &mut self,
         channel_id: u64,
@@ -56,66 +73,88 @@ impl Transaction {
         pub_date: i64,
         guid: &str,
         link: &str,
-        title: Option<String>,
-        description: Option<String>,
     ) -> Result<u64, Error> {
         self.tx.exec_drop(
             "INSERT INTO `channel_item` SET `channel_id` = ?,
                                             `pub_date` = ?,
                                             `guid` = ?,
-                                            `link` = ?,
-                                            `title` = ?,
-                                            `description` = ?",
-            (channel_id, pub_date, guid, link, title, description),
+                                            `link` = ?",
+            (channel_id, pub_date, guid, link),
         )?;
         Ok(self.tx.last_insert_id().unwrap())
     }
 
-    pub fn contents_queue_for_provider_id(
-        &mut self,
-        provider_id: u64,
-    ) -> Result<Vec<Content>, Error> {
-        self.tx.exec(
-            "SELECT `c1`.`content_id`,
-                    `c1`.`channel_item_id`,
-                    `c1`.`provider_id`,
-                    `c1`.`title`,
-                    `c1`.`description`
-            FROM `content` AS `c1` WHERE `c1`.`provider_id` IS NULL AND NOT EXISTS (
-                SELECT NULL FROM  `content` AS `c2`
-                            WHERE `c2`.`channel_item_id` = `c1`.`channel_item_id`
-                              AND `c2`.`provider_id` = ? LIMIT 1
-            )",
-            (provider_id,),
-        )
-    }
-
-    pub fn insert_content(
+    pub fn insert_channel_item_description(
         &mut self,
         channel_item_id: u64,
         provider_id: Option<u64>,
-        title: &str,
-        description: &str,
+        title: Option<String>,
+        description: Option<String>,
     ) -> Result<u64, Error> {
         self.tx.exec_drop(
-            "INSERT INTO `content` SET  `channel_item_id` = ?,
-                                        `provider_id` = ?,
-                                        `title` = ?,
-                                        `description` = ?",
+            "INSERT INTO `channel_item_description` SET `channel_item_id` = ?,
+                                                        `provider_id` = ?,
+                                                        `title` = ?,
+                                                        `description` = ?",
             (channel_item_id, provider_id, title, description),
         )?;
         Ok(self.tx.last_insert_id().unwrap())
     }
 
-    pub fn replace_content_description(
+    pub fn channel_item_content_descriptions_queue_for_provider_id(
+        &mut self,
+        provider_id: u64,
+    ) -> Result<Vec<ChannelItemContentDescription>, Error> {
+        self.tx.exec(
+            "SELECT `t1`.`content_id`,
+                    `t1`.`channel_item_id`,
+                    `t1`.`provider_id`,
+                    `t1`.`title`,
+                    `t1`.`description`
+            FROM `channel_item_content_description` AS `t1`
+            WHERE `t1`.`provider_id` IS NULL AND NOT EXISTS (
+                SELECT NULL FROM  `channel_item_content_description` AS `t2`
+                            WHERE `t2`.`channel_item_id` = `t1`.`channel_item_id`
+                              AND `t2`.`provider_id` = ? LIMIT 1
+            )",
+            (provider_id,),
+        )
+    }
+
+    pub fn insert_channel_item_content(&mut self, channel_item_id: u64) -> Result<u64, Error> {
+        self.tx.exec_drop(
+            "INSERT INTO `channel_item_content` SET `channel_item_id` = ?",
+            (channel_item_id,),
+        )?;
+        Ok(self.tx.last_insert_id().unwrap())
+    }
+
+    pub fn insert_channel_item_content_description(
+        &mut self,
+        channel_item_content_id: u64,
+        provider_id: Option<u64>,
+        title: Option<&str>,
+        description: Option<&str>,
+    ) -> Result<u64, Error> {
+        self.tx.exec_drop(
+            "INSERT INTO `channel_item_content_description` SET `channel_item_content_id` = ?,
+                                                                `provider_id` = ?,
+                                                                `title` = ?,
+                                                                `description` = ?",
+            (channel_item_content_id, provider_id, title, description),
+        )?;
+        Ok(self.tx.last_insert_id().unwrap())
+    }
+
+    pub fn replace_channel_item_content_description(
         &mut self,
         content_id: u64,
         from: &str,
         to: &str,
     ) -> Result<(), Error> {
         self.tx.exec_drop(
-            "UPDATE `content` SET `description` = REPLACE(`description`, ?, ?)
-                              WHERE`content_id` = ?",
+            "UPDATE `channel_item_content_description`
+                SET `description` = REPLACE(`description`, ?, ?) WHERE`content_id` = ?",
             (from, to, content_id),
         )
     }

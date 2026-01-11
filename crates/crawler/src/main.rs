@@ -72,14 +72,6 @@ fn crawl(tx: &mut mysql::Transaction, channel_config: &config::Channel) -> Resul
 
     let channel_url = channel_config.url.to_string(); // allocate once
 
-    let channel_items =
-        match rss::Channel::read_from(&get(channel_config.url.as_str())?.bytes()?[..]) {
-            Ok(response) => response.into_items(),
-            Err(e) => bail!("Could not parse response: `{e}`"),
-        };
-
-    let channel_items_limit = channel_config.items_limit.unwrap_or(channel_items.len());
-
     let channel_id = match tx.channel_id_by_url(&channel_url)? {
         Some(channel_id) => channel_id,
         None => {
@@ -88,6 +80,28 @@ fn crawl(tx: &mut mysql::Transaction, channel_config: &config::Channel) -> Resul
             channel_id
         }
     };
+
+    let channel_items =
+        match rss::Channel::read_from(&get(channel_config.url.as_str())?.bytes()?[..]) {
+            Ok(channel) => {
+                if channel_config.persist_description {
+                    let channel_description_id = tx.insert_channel_description(
+                        channel_id,
+                        None,
+                        Some(strip_tags(channel.title(), None)),
+                        Some(strip_tags(
+                            channel.description(),
+                            Some(&channel_config.allowed_tags),
+                        )),
+                    )?;
+                    debug!("Save channel description #{channel_description_id}")
+                }
+                channel.into_items()
+            }
+            Err(e) => bail!("Could not parse response: `{e}`"),
+        };
+
+    let channel_items_limit = channel_config.items_limit.unwrap_or(channel_items.len());
 
     for channel_item in channel_items.iter().take(channel_items_limit) {
         let guid = match channel_item.guid {
@@ -106,72 +120,62 @@ fn crawl(tx: &mut mysql::Transaction, channel_config: &config::Channel) -> Resul
             None => bail!("Undefined `pub_date`"),
         };
         if tx.channel_items_total_by_channel_id_guid(channel_id, guid)? > 0 {
+            debug!("Channel item `{guid}` already exists, skipped.");
             continue; // skip next steps as processed
         }
-        let channel_item_id = tx.insert_channel_item(
-            channel_id,
-            pub_date,
-            guid,
-            link,
-            if channel_config.persist_item_title {
-                channel_item.title().map(|s| strip_tags(s, None))
-            } else {
-                None
-            },
-            if channel_config.persist_item_description {
+        let channel_item_id = tx.insert_channel_item(channel_id, pub_date, guid, link)?;
+        info!("Register new channel item #{channel_item_id} ({link})");
+        if channel_config.persist_item_description {
+            let channel_item_description_id = tx.insert_channel_item_description(
+                channel_item_id,
+                None,
+                channel_item.title().map(|s| strip_tags(s, None)),
                 channel_item
                     .description()
-                    .map(|s| strip_tags(s, Some(&channel_config.allowed_tags)))
-            } else {
-                None
-            },
-        )?;
-        info!("Register new channel item #{channel_item_id} ({link})");
+                    .map(|s| strip_tags(s, Some(&channel_config.allowed_tags))),
+            )?;
+            debug!("Save channel item description #{channel_item_description_id}")
+        }
         // preload remote content..
+        if !channel_config.scrape_item_content {
+            continue;
+        }
+        let channel_item_content_id = tx.insert_channel_item_content(channel_item_id)?;
+        info!("Add new content record #{channel_item_content_id}");
+
         let html = scraper::Html::parse_document(&get(link)?.text()?);
-        let description = strip_tags(
-            &match channel_config.content_description_selector {
-                Some(ref selector) => match html.select(selector).next() {
-                    Some(description) => description.inner_html(),
-                    None => bail!("Could not scrape `description` selector from `{link}`"),
-                },
-                None => match channel_item.description {
-                    Some(ref description) => description.clone(),
-                    None => {
-                        bail!("Could not assign `description` from channel item for `{link}`")
-                    }
-                },
+        let description = match channel_config.scrape_item_content_description_selector {
+            Some(ref selector) => match html.select(selector).next() {
+                Some(description) => Some(strip_tags(
+                    &description.inner_html(),
+                    Some(&channel_config.allowed_tags),
+                )),
+                None => bail!("Could not scrape `description` selector from `{link}`"),
             },
-            Some(&channel_config.allowed_tags),
-        );
-        let content_id = tx.insert_content(
-            channel_item_id,
+            None => None,
+        };
+        let channel_item_content_description_id = tx.insert_channel_item_content_description(
+            channel_item_content_id,
             None,
-            strip_tags(
-                &match channel_config.content_title_selector {
-                    Some(ref selector) => match html.select(selector).next() {
-                        Some(title) => title.inner_html(),
-                        None => bail!("Could not scrape `title` selector from `{link}`"),
-                    },
-                    None => match channel_item.title {
-                        Some(ref title) => title.clone(),
-                        None => {
-                            bail!(
-                                "Could not assign `title` from channel item for content in `{link}`"
-                            )
-                        }
-                    },
+            match channel_config.scrape_item_content_title_selector {
+                Some(ref selector) => match html.select(selector).next() {
+                    Some(title) => Some(strip_tags(&title.inner_html(), None)),
+                    None => bail!("Could not scrape `title` selector from `{link}`"),
                 },
-                None,
-            )
-            .trim(),
-            description.trim(),
+                None => None,
+            }
+            .as_ref()
+            .map(|s| s.trim()),
+            description.as_ref().map(|s| s.trim()),
         )?;
-        info!("Add new content record #{content_id}");
+        debug!("Save channel item content description #{channel_item_content_description_id}");
         // persist images if enabled
         if let Some(ref selector) = channel_config.persist_images_selector {
             use sha2::{Digest, Sha256};
-            for element in scraper::Html::parse_document(&description).select(selector) {
+            if description.is_none() {
+                bail!("Field `description` is required to scrape images from `{link}`")
+            }
+            for element in scraper::Html::parse_document(&description.unwrap()).select(selector) {
                 if let Some(src) = element.value().attr("src") {
                     let absolute = match Url::parse(src) {
                         Ok(url) => url,
@@ -197,10 +201,15 @@ fn crawl(tx: &mut mysql::Transaction, channel_config: &config::Channel) -> Resul
                             image_id
                         }
                     };
-                    let content_image_id = tx.insert_content_image(content_id, image_id)?;
+                    let content_image_id =
+                        tx.insert_content_image(channel_item_content_id, image_id)?;
                     debug!("Add content image relationship #{content_image_id}");
                     let uri = format!("/image/{image_id}");
-                    tx.replace_content_description(content_id, src, &uri)?;
+                    tx.replace_channel_item_content_description(
+                        channel_item_content_id,
+                        src,
+                        &uri,
+                    )?;
                     debug!("Replace content image in description from `{src}` to `{uri}`")
                 }
             }

@@ -13,19 +13,30 @@ pub struct ChannelItem {
     pub pub_date: i64,
     pub guid: String,
     pub link: String,
+}
+
+#[derive(Debug, PartialEq, Eq, FromRow)]
+pub struct ChannelItemDescription {
+    pub channel_item_description_id: u64,
+    pub channel_item_id: u64,
+    pub provider_id: Option<u64>,
     pub title: Option<String>,
     pub description: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq, FromRow)]
-pub struct Content {
-    pub content_id: u64,
+pub struct ChannelItemContent {
+    pub channel_item_content_id: u64,
     pub channel_item_id: u64,
-    /// None if the original `title` and `description` values
-    /// parsed from the channel item on crawl
+}
+
+#[derive(Debug, PartialEq, Eq, FromRow)]
+pub struct ChannelItemContentDescription {
+    pub channel_item_content_description_id: u64,
+    pub channel_item_content_id: u64,
     pub provider_id: Option<u64>,
-    pub title: String,
-    pub description: String,
+    pub title: Option<String>,
+    pub description: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq, FromRow)]
@@ -37,6 +48,7 @@ pub struct Provider {
 #[derive(Debug, PartialEq, Eq, FromRow)]
 pub struct Image {
     pub image_id: u64,
+    pub provider_id: Option<u64>,
     /// Keep image unique by comparing its data hash
     pub sha256: String,
     /// Original `src` tag value to post-replacing

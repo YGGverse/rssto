@@ -3,13 +3,15 @@
     {% if rows %}
         {% for row in rows %}
             <div>
-                <a name="{{ row.content_id }}"></a>
-                <h2><a href="{{ row.content_id }}">{{ row.title }}</a></h2>
+                <a name="{{ row.channel_item_content_description_id }}"></a>
+                <h2><a href="{{ row.channel_item_content_description_id }}">{{ row.title }}</a></h2>
                 <p>{{ row.time }}</p>
             </div>
         {% endfor %}
     {% else %}
-        <div>Nothing.</div>
+        <div>
+            <p>Nothing.</p>
+        </div>
     {% endif %}
     {% if next %}<a href="{{ next }}">Next</a>{% endif %}
     {% if back %}<a href="{{ back }}">Back</a>{% endif %}

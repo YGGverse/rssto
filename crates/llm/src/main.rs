@@ -67,35 +67,50 @@ async fn main() -> Result<()> {
     loop {
         debug!("New queue begin...");
         let mut tx = db.transaction()?;
-        for source in tx.contents_queue_for_provider_id(provider_id)? {
+        for channel_item_content_description in
+            tx.channel_item_content_descriptions_queue_for_provider_id(provider_id)?
+        {
             debug!(
-                "Begin generating `content_id` #{} using `provider_id` #{provider_id}.",
-                source.content_id
+                "Begin generating `channel_item_content_description` #{} using `provider_id` #{provider_id}.",
+                channel_item_content_description.channel_item_content_description_id
             );
-
-            let title = llm
-                .chat_completion(ChatCompletionRequest::new(&config.llm.model).message(
-                    Message::user(format!("{}\n{}", config.llm.message, source.title)),
-                ))
-                .await?;
-
-            let description = llm
-                .chat_completion(ChatCompletionRequest::new(&config.llm.model).message(
-                    Message::user(format!("{}\n{}", config.llm.message, source.description)),
-                ))
-                .await?;
-
-            let content_id = tx.insert_content(
-                source.channel_item_id,
+            let title = match channel_item_content_description.title {
+                Some(subject) => Some(
+                    llm.chat_completion(ChatCompletionRequest::new(&config.llm.model).message(
+                        Message::user(format!("{}\n{}", config.llm.message, subject)),
+                    ))
+                    .await?
+                    .choices[0]
+                        .message
+                        .content
+                        .trim()
+                        .to_string(),
+                ),
+                None => None,
+            };
+            let description = match channel_item_content_description.description {
+                Some(subject) => Some(
+                    llm.chat_completion(ChatCompletionRequest::new(&config.llm.model).message(
+                        Message::user(format!("{}\n{}", config.llm.message, subject)),
+                    ))
+                    .await?
+                    .choices[0]
+                        .message
+                        .content
+                        .trim()
+                        .to_string(),
+                ),
+                None => None,
+            };
+            let channel_item_content_description_id = tx.insert_channel_item_content_description(
+                channel_item_content_description.channel_item_content_id,
                 Some(provider_id),
-                &title.choices[0].message.content,
-                &description.choices[0].message.content,
+                title.as_deref(),
+                description.as_deref(),
             )?;
-
-            debug!(
-                "Created `content_id` #{content_id} using `content_id` #{} source by `provider_id` #{provider_id}.",
-                source.content_id
-            )
+            info!(
+                "Create `channel_item_content_description` #{channel_item_content_description_id} by `provider_id` #{provider_id}."
+            );
         }
         tx.commit()?;
         debug!("Queue completed");

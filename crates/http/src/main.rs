@@ -31,7 +31,7 @@ fn index(
     #[derive(Serialize)]
     #[serde(crate = "rocket::serde")]
     struct Row {
-        content_id: u64,
+        channel_item_content_description_id: u64,
         link: String,
         time: String,
         title: String,
@@ -41,7 +41,7 @@ fn index(
         Status::InternalServerError
     })?;
     let total = conn
-        .contents_total_by_provider_id(global.provider_id, search)
+        .channel_item_content_descriptions_total_by_provider_id(global.provider_id, search)
         .map_err(|e| {
             error!("Could not get contents total: `{e}`");
             Status::InternalServerError
@@ -73,7 +73,7 @@ fn index(
             back: page.map(|p| uri!(index(search, if p > 2 { Some(p - 1) } else { None }))),
             next: if page.unwrap_or(1) * global.list_limit >= total { None }
                     else { Some(uri!(index(search, Some(page.map_or(2, |p| p + 1))))) },
-            rows: conn.contents_by_provider_id(
+            rows: conn.channel_item_content_descriptions_by_provider_id(
                         global.provider_id,
                         search,
                         Sort::Desc,
@@ -84,13 +84,16 @@ fn index(
                         Status::InternalServerError
                     })?
                 .into_iter()
-                .map(|content| {
-                    let channel_item = conn.channel_item(content.channel_item_id).unwrap().unwrap();
+                .map(|channel_item_content_description| {
+                    let channel_item = conn.channel_item(
+                        channel_item_content_description.channel_item_content_id
+                    ).unwrap().unwrap();
                     Row {
-                        content_id: content.content_id,
+                        channel_item_content_description_id:
+                            channel_item_content_description.channel_item_content_description_id,
                         link: channel_item.link,
                         time: time(channel_item.pub_date).format(&global.format_time).to_string(),
-                        title: content.title,
+                        title: channel_item_content_description.title.unwrap_or_default(), // @TODO handle
                     }
                 })
                 .collect::<Vec<Row>>(),
@@ -102,9 +105,9 @@ fn index(
     ))
 }
 
-#[get("/<content_id>")]
+#[get("/<channel_item_content_description_id>")]
 fn info(
-    content_id: u64,
+    channel_item_content_description_id: u64,
     db: &State<Database>,
     meta: &State<Meta>,
     global: &State<Global>,
@@ -113,29 +116,52 @@ fn info(
         error!("Could not connect database: `{e}`");
         Status::InternalServerError
     })?;
-    match conn.content(content_id).map_err(|e| {
-        error!("Could not get content `{content_id}`: `{e}`");
+    match conn.channel_item_content_description(channel_item_content_description_id).map_err(|e| {
+        error!("Could not get `channel_item_content_description_id` {channel_item_content_description_id}: `{e}`");
         Status::InternalServerError
     })? {
-        Some(content) => {
-            let channel_item = conn
-                .channel_item(content.channel_item_id)
+        Some(channel_item_content_description) => {
+            let channel_item_content = conn
+                .channel_item_content(channel_item_content_description.channel_item_content_id)
                 .map_err(|e| {
-                    error!("Could not get requested channel item: `{e}`");
+                    error!(
+                        "Could not get requested `channel_item_content` #{}: `{e}`",
+                        channel_item_content_description.channel_item_content_id
+                    );
                     Status::InternalServerError
                 })?
                 .ok_or_else(|| {
-                    error!("Could not find requested channel item");
+                    error!(
+                        "Could not find requested `channel_item_content` #{}",
+                        channel_item_content_description.channel_item_content_id
+                    );
                     Status::NotFound
                 })?;
+            let channel_item = conn
+                .channel_item(channel_item_content.channel_item_id)
+                .map_err(|e| {
+                    error!(
+                        "Could not get requested `channel_item` #{}: `{e}`",
+                        channel_item_content.channel_item_id
+                    );
+                    Status::InternalServerError
+                })?
+                .ok_or_else(|| {
+                    error!(
+                        "Could not find requested `channel_item` #{}",
+                        channel_item_content.channel_item_id
+                    );
+                    Status::NotFound
+                })?;
+            let title = channel_item_content_description.title.unwrap_or_default(); // @TODO handle
             Ok(Template::render(
                 "info",
                 context! {
-                    description: content.description,
+                    description: channel_item_content_description.description,
                     link: channel_item.link,
                     meta: meta.inner(),
-                    title: format!("{}{S}{}", content.title, meta.title),
-                    name: content.title,
+                    title: format!("{title}{S}{}", meta.title),
+                    name: title,
                     time: time(channel_item.pub_date).format(&global.format_time).to_string(),
                 },
             ))
@@ -175,8 +201,8 @@ fn rss(
         error!("Could not connect database: `{e}`");
         Status::InternalServerError
     })?;
-    for content in conn
-        .contents_by_provider_id(
+    for channel_item_content_description in conn
+        .channel_item_content_descriptions_by_provider_id(
             global.provider_id,
             search,
             Sort::Desc,
@@ -184,26 +210,53 @@ fn rss(
             Some(global.list_limit),
         )
         .map_err(|e| {
-            error!("Could not load channel item contents: `{e}`");
+            error!(
+                "Could not load `channel_item_content_description` for `provider` #{:?}: `{e}`",
+                global.provider_id
+            );
             Status::InternalServerError
         })?
     {
-        let channel_item = conn
-            .channel_item(content.channel_item_id)
+        let channel_item_content = conn
+            .channel_item_content(channel_item_content_description.channel_item_content_id)
             .map_err(|e| {
-                error!("Could not get requested channel item: `{e}`");
+                error!(
+                    "Could not get requested `channel_item_content` #{}: `{e}`",
+                    channel_item_content_description.channel_item_content_id
+                );
                 Status::InternalServerError
             })?
             .ok_or_else(|| {
-                error!("Could not find requested channel item");
+                error!(
+                    "Could not find requested `channel_item_content` #{}",
+                    channel_item_content_description.channel_item_content_id
+                );
+                Status::NotFound
+            })?;
+        let channel_item = conn
+            .channel_item(channel_item_content.channel_item_id)
+            .map_err(|e| {
+                error!(
+                    "Could not get requested `channel_item` #{}: `{e}`",
+                    channel_item_content.channel_item_id
+                );
+                Status::InternalServerError
+            })?
+            .ok_or_else(|| {
+                error!(
+                    "Could not find requested `channel_item` #{}",
+                    channel_item_content.channel_item_id
+                );
                 Status::NotFound
             })?;
         feed.push(
-            content.channel_item_id,
+            channel_item_content_description.channel_item_content_description_id,
             time(channel_item.pub_date),
             channel_item.link,
-            content.title,
-            content.description,
+            channel_item_content_description.title.unwrap_or_default(), // @TODO handle
+            channel_item_content_description
+                .description
+                .unwrap_or_default(), // @TODO handle
         )
     }
     Ok(RawXml(feed.commit()))

@@ -17,16 +17,18 @@ pub struct Channel {
     pub url: Url,
     /// Limit latest channel items to crawl (unlimited by default)
     pub items_limit: Option<usize>,
-    /// Save Channel item title in the database (currently not in use)
-    pub persist_item_title: bool,
-    /// Save Channel item description in the database (currently not in use)
+    /// Save Channel title and description in the database
+    pub persist_description: bool,
+    /// Save Channel item title and description in the database
     pub persist_item_description: bool,
+    /// Grab Channel item content (from the item `link`)
+    pub scrape_item_content: bool,
     /// Scrape title by CSS selector
     /// * None to use Channel item title if exists or fail to continue
-    pub content_title_selector: Option<Selector>,
+    pub scrape_item_content_title_selector: Option<Selector>,
     /// Scrape description by CSS selector
     /// * None to use Channel item description if exists or fail to continue
-    pub content_description_selector: Option<Selector>,
+    pub scrape_item_content_description_selector: Option<Selector>,
     /// Allowed tags
     /// * empty to strip all tags (default)
     pub allowed_tags: std::collections::HashSet<String>,

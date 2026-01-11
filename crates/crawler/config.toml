@@ -18,25 +18,28 @@ update = 900
     url = "https://1"
 
     # Limit latest channel items to crawl (unlimited by default)
-    items_limit = 20
+    items_limit = 5
 
-    # Save Channel item title in the database (currently not in use)
-    persist_item_title = true
+    # Save Channel `title` and `description` in the database (currently not in use)
+    persist_description = true
 
-    #Save Channel item description in the database (currently not in use)
+    # Save Channel item `title` and `description` in the database
     persist_item_description = true
 
     # Allowed tags
     # * empty to strip all tags (default)
-    allowed_tags = []
+    allowed_tags = ["a", "br", "p", "img"]
+
+    # Grab Channel item content (from the item `link`)
+    scrape_item_content = false
 
     # Scrape title by CSS selector
     # * None to use Channel item title if exists or fail to continue
-    # content_title_selector = "h1"
+    # scrape_item_content_title_selector = "h1"
 
     #  Scrape description by CSS selector
     #  * None to use Channel item description if exists or fail to continue
-    # content_description_selector = "article"
+    # scrape_item_content_description_selector = "article"
 
     # Preload content images locally if `Some`
     # * currently stored in the database
@@ -49,25 +52,28 @@ update = 900
     url = "https://2"
 
     # Limit latest channel items to crawl (unlimited by default)
-    items_limit = 20
+    items_limit = 5
 
-    # Save Channel item title in the database (currently not in use)
-    persist_item_title = true
+    # Save Channel `title` and `description` in the database (currently not in use)
+    persist_description = true
 
-    #Save Channel item description in the database (currently not in use)
+    # Save Channel item `title` and `description` in the database
     persist_item_description = true
 
     # Allowed tags
     # * empty to strip all tags (default)
-    allowed_tags = []
+    allowed_tags = ["a", "br", "p", "img"]
+
+    # Grab Channel item content (from the item `link`)
+    scrape_item_content = false
 
     # Scrape title by CSS selector
     # * None to use Channel item title if exists or fail to continue
-    # content_title_selector = "h1"
+    # scrape_item_content_title_selector = "h1"
 
     #  Scrape description by CSS selector
     #  * None to use Channel item description if exists or fail to continue
-    # content_description_selector = "article"
+    # scrape_item_content_description_selector = "article"
 
     # Preload content images locally if `Some`
     # * currently stored in the database
