@@ -59,17 +59,6 @@ pub struct Image {
     pub data: Vec<u8>,
 }
 
-/// Includes joined `image` table members
-#[derive(Debug, PartialEq, Eq, FromRow)]
-pub struct ContentImage {
-    pub content_image_id: u64,
-    pub content_id: u64,
-    pub image_id: u64,
-    // Image members (JOIN)
-    pub data: Vec<u8>,
-    pub source: String,
-}
-
 pub enum Sort {
     Asc,
     Desc,

@@ -201,12 +201,12 @@ fn crawl(tx: &mut mysql::Transaction, channel_config: &config::Channel) -> Resul
                             image_id
                         }
                     };
-                    let content_image_id =
-                        tx.insert_content_image(channel_item_content_id, image_id)?;
-                    debug!("Add content image relationship #{content_image_id}");
+                    let channel_item_content_image_id =
+                        tx.insert_channel_item_content_image(channel_item_content_id, image_id)?;
+                    debug!("Add content image relationship #{channel_item_content_image_id}");
                     let uri = format!("/image/{image_id}");
                     tx.replace_channel_item_content_description(
-                        channel_item_content_id,
+                        channel_item_content_description_id,
                         src,
                         &uri,
                     )?;

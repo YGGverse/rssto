@@ -114,22 +114,10 @@ impl Connection {
         }
     }
 
-    pub fn content_image(&mut self, content_image_id: u64) -> Result<Option<ContentImage>, Error> {
-        self.conn.exec_first(
-            "SELECT `content_image_id`,
-                    `content_id`,
-                    `image_id`,
-                    `data`,
-                    `source` FROM `content_image`
-                             JOIN  `image` ON (`image`.`image_id` = `content_image`.`image_id`)
-                             WHERE `content_image_id` = ? LIMIT 1",
-            (content_image_id,),
-        )
-    }
-
     pub fn image(&mut self, image_id: u64) -> Result<Option<Image>, Error> {
         self.conn.exec_first(
             "SELECT `image_id`,
+                    `provider_id`,
                     `sha256`,
                     `src`,
                     `url`,

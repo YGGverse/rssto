@@ -106,20 +106,20 @@ impl Transaction {
         provider_id: u64,
     ) -> Result<Vec<ChannelItemContentDescription>, Error> {
         self.tx.exec(
-            "SELECT `t1`.`content_id`,
-                    `t1`.`channel_item_id`,
+            "SELECT `t1`.`channel_item_content_description_id`,
+                    `t1`.`channel_item_content_id`,
                     `t1`.`provider_id`,
                     `t1`.`title`,
                     `t1`.`description`
             FROM `channel_item_content_description` AS `t1`
             WHERE `t1`.`provider_id` IS NULL AND NOT EXISTS (
                 SELECT NULL FROM  `channel_item_content_description` AS `t2`
-                            WHERE `t2`.`channel_item_id` = `t1`.`channel_item_id`
+                            WHERE `t2`.`channel_item_content_description_id` = `t1`.`channel_item_content_description_id`
                               AND `t2`.`provider_id` = ? LIMIT 1
             )",
             (provider_id,),
         )
-    }
+    } // @TODO upgrade to the latest version
 
     pub fn insert_channel_item_content(&mut self, channel_item_id: u64) -> Result<u64, Error> {
         self.tx.exec_drop(
@@ -148,21 +148,26 @@ impl Transaction {
 
     pub fn replace_channel_item_content_description(
         &mut self,
-        content_id: u64,
+        channel_item_content_description_id: u64,
         from: &str,
         to: &str,
     ) -> Result<(), Error> {
         self.tx.exec_drop(
             "UPDATE `channel_item_content_description`
-                SET `description` = REPLACE(`description`, ?, ?) WHERE`content_id` = ?",
-            (from, to, content_id),
+                SET `description` = REPLACE(`description`, ?, ?)
+              WHERE `channel_item_content_description_id` = ?",
+            (from, to, channel_item_content_description_id),
         )
     }
 
-    pub fn insert_content_image(&mut self, content_id: u64, image_id: u64) -> Result<u64, Error> {
+    pub fn insert_channel_item_content_image(
+        &mut self,
+        channel_item_content_id: u64,
+        image_id: u64,
+    ) -> Result<u64, Error> {
         self.tx.exec_drop(
-            "INSERT INTO `content_image` SET `content_id` = ?, `image_id` = ?",
-            (content_id, image_id),
+            "INSERT INTO `channel_item_content_image` SET `channel_item_content_id` = ?, `image_id` = ?",
+            (channel_item_content_id, image_id),
         )?;
         Ok(self.tx.last_insert_id().unwrap())
     }
