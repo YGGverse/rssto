@@ -1,24 +1,8 @@
-[package]
-name = "rssto"
-version = "0.2.2"
-edition = "2024"
-license = "MIT"
-readme = "README.md"
-description = "Convert RSS feeds into multiple formats"
-keywords = ["rss", "aggregator", "conversion", "html", "gemtext"]
-categories = ["command-line-utilities", "parsing", "text-processing", "value-formatting"]
-repository = "https://github.com/YGGverse/rssto"
-
-[dependencies]
-anyhow = "1.0"
-chrono = "^0.4.20"
-clap = { version = "4.5", features = ["derive"] }
-log = "0.4"
-regex = "1.12"
-reqwest = { version = "0.12", features = ["blocking"] }
-rss = "2.0"
-serde = { version = "1.0", features = ["derive"] }
-strip-tags = "0.1"
-toml = "0.9"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-url = "2.5"
+[workspace]
+resolver = "2"
+members = [
+    "crates/crawler",
+    "crates/http",
+    "crates/llm",
+    "crates/mysql",
+]

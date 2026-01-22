@@ -6,7 +6,7 @@ use std::path::PathBuf;
 pub struct Argument {
     /// Path to config file
     ///
-    /// * see `config/example.toml`
+    /// * see `config.toml`
     #[arg(short, long)]
     pub config: PathBuf,
 }

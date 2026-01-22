@@ -1,0 +1,80 @@
+# Rescan feed channels time, in seconds
+update = 900
+
+# Database connection setup
+# * see crates/mysql/database
+[mysql]
+
+    host = "localhost"
+    port = 3306
+    username = ""
+    password = ""
+    database = "rssto"
+
+# Content sources (unlimited)
+[[channel]]
+
+    # RSS feed source
+    url = "https://1"
+
+    # Limit latest channel items to crawl (unlimited by default)
+    items_limit = 5
+
+    # Save Channel `title` and `description` in the database (currently not in use)
+    persist_description = true
+
+    # Save Channel item `title` and `description` in the database
+    persist_item_description = true
+
+    # Allowed tags
+    # * empty to strip all tags (default)
+    allowed_tags = ["a", "br", "p", "img"]
+
+    # Grab Channel item content (from the item `link`)
+    scrape_item_content = false
+
+    # Scrape title by CSS selector
+    # * None to use Channel item title if exists or fail to continue
+    # scrape_item_content_title_selector = "h1"
+
+    #  Scrape description by CSS selector
+    #  * None to use Channel item description if exists or fail to continue
+    # scrape_item_content_description_selector = "article"
+
+    # Preload content images locally if `Some`
+    # * currently stored in the database
+    # persist_images_selector = "img"
+
+
+[[channel]]
+
+    # RSS feed source
+    url = "https://2"
+
+    # Limit latest channel items to crawl (unlimited by default)
+    items_limit = 5
+
+    # Save Channel `title` and `description` in the database (currently not in use)
+    persist_description = true
+
+    # Save Channel item `title` and `description` in the database
+    persist_item_description = true
+
+    # Allowed tags
+    # * empty to strip all tags (default)
+    allowed_tags = ["a", "br", "p", "img"]
+
+    # Grab Channel item content (from the item `link`)
+    scrape_item_content = false
+
+    # Scrape title by CSS selector
+    # * None to use Channel item title if exists or fail to continue
+    # scrape_item_content_title_selector = "h1"
+
+    #  Scrape description by CSS selector
+    #  * None to use Channel item description if exists or fail to continue
+    # scrape_item_content_description_selector = "article"
+
+    # Preload content images locally if `Some`
+    # * currently stored in the database
+    # persist_images_selector = "img"

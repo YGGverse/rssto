@@ -1,0 +1,21 @@
+{% extends "layout" %}
+{% block content %}
+    {% if rows %}
+        {% for row in rows %}
+            <div>
+                <a name="{{ row.channel_item_content_description_id }}"></a>
+                <h2><a href="{{ row.channel_item_content_description_id }}">{{ row.title }}</a></h2>
+                <p>{{ row.time }}</p>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div>
+            <p>Nothing.</p>
+        </div>
+    {% endif %}
+    {% if next %}<a href="{{ next }}">Next</a>{% endif %}
+    {% if back %}<a href="{{ back }}">Back</a>{% endif %}
+    {% if total %}
+        <p>Page {{ page }} / {{ pages }} ({{ total }} total)</p>
+    {% endif %}
+{% endblock content %}

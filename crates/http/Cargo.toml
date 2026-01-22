@@ -1,0 +1,19 @@
+[package]
+name = "rssto-http"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+readme = "README.md"
+description = "Web server for the rssto DB, based on Rocket engine"
+keywords = ["rss", "aggregator", "http", "server"]
+categories = ["command-line-utilities", "parsing", "text-processing", "value-formatting"]
+repository = "https://github.com/YGGverse/rssto"
+
+[dependencies]
+chrono = { version = "0.4.41", features = ["serde"] }
+clap = { version = "4.5.54", features = ["derive"] }
+mysql = { package = "rssto-mysql", version = "0.1.0", path = "../mysql" }
+rocket = "0.5.1"
+rocket_dyn_templates = { version = "0.2.0", features = ["tera"] }
+serde = { version = "1.0.228", features = ["derive"] }
+toml = "0.9.10"

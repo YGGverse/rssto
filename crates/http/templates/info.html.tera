@@ -1,0 +1,10 @@
+{% extends "layout" %}
+{% block content %}
+<div>
+    <h1>{{ name }}</h1>
+    <p><a href="{{ link }}">{{ time }}</a></p>
+    <div>
+        {{ description | safe }}
+    </div>
+</div>
+{% endblock content %}

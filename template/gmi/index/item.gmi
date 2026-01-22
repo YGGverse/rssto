@@ -1,6 +1,0 @@
-
-### {title}
-
-{description}
-
-=> {link} {pub_date}
